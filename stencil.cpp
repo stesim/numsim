@@ -1,6 +1,6 @@
 #include "stencil.h"
 
-#ifdef DEBUG
+#ifdef _DEBUG
 #define MY_ASSERT(x) x
 #else
 #define MY_ASSERT(x)
@@ -194,27 +194,6 @@ Stencil Stencil::lerpy( real h )
 	return s;
 }
 
-Stencil Stencil::sor( const Point& h )
-{
-	real dx2 = h.x * h.x;
-	real dy2 = h.y * h.y;
-
-	Stencil s;
-	s.m_Values[ 0 ][ 0 ] =  0.0;
-	s.m_Values[ 0 ][ 1 ] =  1.0 / dy2;
-	s.m_Values[ 0 ][ 2 ] =  0.0;
-
-	s.m_Values[ 1 ][ 0 ] =  1.0 / dx2;
-	s.m_Values[ 1 ][ 1 ] =  0.0;
-	s.m_Values[ 1 ][ 2 ] =  1.0 / dx2;
-
-	s.m_Values[ 2 ][ 0 ] =  0.0;
-	s.m_Values[ 2 ][ 1 ] =  1.0 / dy2;
-	s.m_Values[ 2 ][ 2 ] =  0.0;
-
-	return s;
-}
-
 void Stencil::apply( const GridFunction& source,
 		const MultiIndex& readBegin,
 		const MultiIndex& readEnd,
@@ -231,6 +210,7 @@ void Stencil::apply( const GridFunction& source,
 			readSize.y == writeEnd.y - writeBegin.y );
 
 	// check if non-zero entries require out-of-bounds accesses
+	/*
 	MY_ASSERT(
 	for( index_t j = 0; j < readSize.y; ++j )
 	{
@@ -244,32 +224,12 @@ void Stencil::apply( const GridFunction& source,
 		}
 	}
 	);
-
-	/*
-	// hard-coding stencil application inside double loop for SIZE = 3 to avoid
-	// additional loops
-	assert( SIZE == 3 );
 	*/
 
 	for( index_t j = 0; j < readSize.y; ++j )
 	{
 		for( index_t i = 0; i < readSize.x; ++i )
 		{
-			/*
-			image( writeBegin.x + i, writeBegin.y + j ) =
-				m_Values[ 0 ][ 0 ] * source( readBegin.x + i - 1, readBegin.y + j - 1 ) +
-				m_Values[ 0 ][ 1 ] * source( readBegin.x + i    , readBegin.y + j - 1 ) +
-				m_Values[ 0 ][ 2 ] * source( readBegin.x + i + 1, readBegin.y + j - 1 ) +
-
-				m_Values[ 1 ][ 0 ] * source( readBegin.x + i - 1, readBegin.y + j     ) +
-				m_Values[ 1 ][ 1 ] * source( readBegin.x + i    , readBegin.y + j     ) +
-				m_Values[ 1 ][ 2 ] * source( readBegin.x + i + 1, readBegin.y + j     ) +
-
-				m_Values[ 2 ][ 0 ] * source( readBegin.x + i - 1, readBegin.y + j + 1 ) +
-				m_Values[ 2 ][ 1 ] * source( readBegin.x + i    , readBegin.y + j + 1 ) +
-				m_Values[ 2 ][ 2 ] * source( readBegin.x + i + 1, readBegin.y + j + 1 );
-			*/
-
 			real sum = 0.0;
 			for( index_t k = 0; k < SIZE; ++k )
 			{
@@ -278,8 +238,8 @@ void Stencil::apply( const GridFunction& source,
 					if( m_Values[ k ][ l ] != 0.0 )
 					{
 						sum += m_Values[ k ][ l ] *	source(
-								readBegin.x + l - SIZE / 2,
-								readBegin.y + k - SIZE / 2 );
+								readBegin.x + i + l - SIZE / 2,
+								readBegin.y + j + k - SIZE / 2 );
 					}
 				}
 			}

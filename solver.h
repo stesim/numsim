@@ -20,8 +20,6 @@ public:
 private:
 	MultiIndex   m_miSize;
 	Point        m_ptH;
-	GridFunction m_funcTemp;
-	Stencil      m_stSOR;
 };
 
 #endif

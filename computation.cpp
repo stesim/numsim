@@ -24,6 +24,9 @@ Computation::Computation( const Params& params )
 	u.set( MultiIndex::ZERO, u.getSize(), params.initialVelocity.x );
 	v.set( MultiIndex::ZERO, v.getSize(), params.initialVelocity.y );
 	p.set( MultiIndex::ZERO, p.getSize(), params.initialPressure );
+
+	f.set( MultiIndex::ZERO, f.getSize(), params.initialVelocity.x );
+	g.set( MultiIndex::ZERO, g.getSize(), params.initialVelocity.y );
 }
 
 real Computation::computeTimeStep()
@@ -31,8 +34,8 @@ real Computation::computeTimeStep()
 	real hx2 = h.x * h.x;
 	real hy2 = h.y * h.y;
 
-	real uMax = u.getMaxValue( MultiIndex( 0, 0 ), u.getSize() );
-	real vMax = v.getMaxValue( MultiIndex( 0, 0 ), v.getSize() );
+	real uMax = u.getMaxValue( MultiIndex::ZERO, u.getSize() );
+	real vMax = v.getMaxValue( MultiIndex::ZERO, v.getSize() );
 
 	return m_Params.tau * std::min( m_Params.Re / 2.0 * hx2 * hy2 /
 			( hx2 + hy2 ), std::min( h.x / uMax, h.y / vMax ) );
@@ -231,41 +234,44 @@ void Computation::computeRightHandSide( real dt )
 	// rhs = df/dx
 	m_stDxBw.apply( f, MultiIndex::ONE, f.getSize() - MultiIndex( 0, 1 ),
 			rhs, MultiIndex::ZERO, rhs.getSize() );
+
 	// tmp1 = dg/dy
 	m_stDyBw.apply( g, MultiIndex::ONE, g.getSize() - MultiIndex( 1, 0 ),
 			m_funcTemp1, MultiIndex::ZERO, rhs.getSize() );
 	// rhs = rhs + tmp1 = (df/dx + dg/dy)
 	rhs.addScaledCopy( MultiIndex::ZERO, rhs.getSize(), m_funcTemp1, 1.0 );
 	// rhs = 1/dt * rhs = 1/dt * (df/dx + dg/dy)
-	rhs.scale( MultiIndex::ZERO, rhs.getSize(), 1 / dt );
+	rhs.scale( MultiIndex::ZERO, rhs.getSize(), 1.0 / dt );
 }
 
-void Computation::setVelocityBoundary( GridFunction& u, GridFunction& v )
+void Computation::setVelocityBoundary( GridFunction& _u, GridFunction& _v )
 {
 	static const real FREE_FLOW_VELOCITY = 1;
 
 	// left
-	u.set( MultiIndex::ZERO, MultiIndex( 1, u.getSize().y ), 0.0 );
+	_u.set( MultiIndex::ZERO, MultiIndex( 1, _u.getSize().y - 1 ), 0.0 );
 	// right
-	u.set( MultiIndex( u.getSize().x - 1, 1 ), u.getSize(), 0.0 );
+	_u.set( MultiIndex( _u.getSize().x - 1, 1 ),
+			_u.getSize() - MultiIndex( 0, 1 ), 0.0 );
 	// bottom
-	u.scaledOffsetCopy( MultiIndex( 1, 0 ), MultiIndex( u.getSize().x - 1, 1 ),
-			u, MultiIndex( 0, 1 ), -1.0 );
+	_u.scaledOffsetCopy( MultiIndex::ZERO, MultiIndex( _u.getSize().x, 1 ),
+			_u, MultiIndex( 0, 1 ), -1.0 );
 	// top
-	u.affineOffsetCopy( MultiIndex( u.getSize().y - 1, 1 ),
-			u.getSize() - MultiIndex( 1, 0 ), u, MultiIndex( 0, -1 ), -1.0,
+	_u.affineOffsetCopy( MultiIndex( 0, _u.getSize().y - 1 ),
+			_u.getSize(), _u, MultiIndex( 0, -1 ), -1.0,
 			2.0 * FREE_FLOW_VELOCITY );
 
 	// left
-	v.scaledOffsetCopy( MultiIndex( 0, 1 ), MultiIndex( 1, v.getSize().y - 1 ),
-			v, MultiIndex( 1, 0 ), -1.0 );
+	_v.scaledOffsetCopy( MultiIndex::ZERO, MultiIndex( 1, _v.getSize().y ),
+			_v, MultiIndex( 1, 0 ), -1.0 );
 	// right
-	v.scaledOffsetCopy( MultiIndex( v.getSize().x - 1, 1 ),
-			v.getSize() - MultiIndex( 0, 1 ), v, MultiIndex( -1, 0 ), -1.0 );
+	_v.scaledOffsetCopy( MultiIndex( _v.getSize().x - 1, 0 ),
+			_v.getSize(), _v, MultiIndex( -1, 0 ), -1.0 );
 	// bottom
-	v.set( MultiIndex::ZERO, MultiIndex( v.getSize().x, 1 ), 0.0 );
+	_v.set( MultiIndex( 1, 0 ), MultiIndex( _v.getSize().x - 1, 1 ), 0.0 );
 	// top
-	v.set( MultiIndex( 0, v.getSize().y - 1 ), v.getSize(), 0.0 );
+	_v.set( MultiIndex( 1, _v.getSize().y - 1 ),
+			_v.getSize() - MultiIndex( 1, 0 ), 0.0 );
 }
 
 void Computation::setPressureBoundary()

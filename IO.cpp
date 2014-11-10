@@ -266,13 +266,18 @@ void IO::writeRawOutput( const MultiIndex& griddimension,
 
 	std::ofstream os( filename );
 
+	os << griddimension.x << ' ' << griddimension.y << std::endl;
+
 	for( int j = 0; j < griddimension.y; ++j )
 	{
-		real y = j * delta.y;
+		real y = j * delta.y + delta.y / 2.0;
 		for( int i = 0; i < griddimension.x; ++i )
 		{
-			real x = i * delta.x;
-			os << std::scientific << x << ' ' << y << ' ' << u( i, j + 1 ) << ' ' << v( i + 1, j ) << ' ' << p( i, j ) << std::endl;
+			real x = i * delta.x + delta.x / 2.0;
+			real interpU = ( u( i + 1, j + 1 ) + u( i, j + 1 ) ) / 2.0;
+			real interpV = ( v( i + 1, j + 1 ) + v( i + 1, j ) ) / 2.0;
+			os << std::scientific << x << ' ' << y << ' ' << interpU << ' '
+				<< interpV << ' ' << p( i + 1, j + 1 ) << std::endl;
 		}
 	}
 

@@ -72,6 +72,8 @@ public:
 	real getMaxValue( const MultiIndex& begin,
 			const MultiIndex& end ) const;
 
+	void print( const MultiIndex& begin, const MultiIndex& end ) const;
+
 private:
 	inline void allocMem();
 	inline void freeMem();

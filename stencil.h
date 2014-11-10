@@ -17,7 +17,6 @@ public:
 	static Stencil dyy( real h );
 	static Stencil lerpx( real h );
 	static Stencil lerpy( real h );
-	static Stencil sor( const Point& h );
 
 	void apply( const GridFunction& source,
 			const MultiIndex& readBegin,

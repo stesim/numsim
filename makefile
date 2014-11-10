@@ -24,7 +24,7 @@ endif
 #-flto -fwhole-program -fuse-linker-plugin# may cause linking errors(!)
 # -Ofast: allow e.g. interchange of 1/c*a*(c+d) = a + 1/c*a*d etc. (=> Assoziativität=AN) => ggf. andere Ergebnisse
 # siehe auch http://www.phoronix.com/scan.php?page=article&item=gcc_48_og&num=1
-CXXFLAGS := -Wall -march=native -g -pedantic -D_DEBUG
+CXXFLAGS := -Wall -march=native -pedantic -D_DEBUG -O3 #-g
 LIBS :=
 
 $(TARGET): $(CXXDEPENDFILE) $(OBJ)

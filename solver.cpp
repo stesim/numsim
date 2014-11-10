@@ -4,9 +4,7 @@
 Solver::Solver( const MultiIndex& dim,
 		const Point& h )
 	: m_miSize( dim ),
-	m_ptH( h ),
-	m_funcTemp( dim ),
-	m_stSOR( Stencil::sor( h ) )
+	m_ptH( h )
 {
 }
 
@@ -28,9 +26,8 @@ real Solver::computeResidual( const GridFunction& p,
 			sum += res_loc * res_loc;
 		}
 	}
-	sum = std::sqrt( sum / ( ( p.getSize().y - 1 ) * ( p.getSize().x - 1 ) ) );
-
-	return sum;
+	
+	return std::sqrt( sum / ( ( p.getSize().y - 2 ) * ( p.getSize().x - 2 ) ) );
 }
 
 void Solver::SORCycle( GridFunction& p,
@@ -43,14 +40,13 @@ void Solver::SORCycle( GridFunction& p,
 	real dx2 = m_ptH.x * m_ptH.x;
 	real dy2 = m_ptH.y * m_ptH.y;
 
-	m_stSOR.apply( p, MultiIndex::ONE, p.getSize() - MultiIndex::ONE,
-			m_funcTemp, MultiIndex::ZERO, m_funcTemp.getSize() );
-	m_funcTemp.addScaledCopy( MultiIndex::ZERO, m_funcTemp.getSize(),
-			rhs, -1.0 );
-	m_funcTemp.scale( MultiIndex::ZERO, m_funcTemp.getSize(),
-			omega * dx2 * dy2 / ( 2.0 * ( dx2 + dy2 ) ) );
-
-	p.scale( MultiIndex::ONE, p.getSize() - MultiIndex::ONE, 1.0 - omega );
-	p.addOffsetCopy( MultiIndex::ONE, p.getSize() - MultiIndex::ONE,
-			m_funcTemp, MultiIndex( -1, -1 ) );
+	for( index_t j = 1; j < p.getSize().y - 1; ++j )
+	{
+		for( index_t i = 1; i < p.getSize().x - 1; ++i )
+		{
+			p( i, j ) = ( 1.0 - omega ) * p( i, j ) + 0.5 * omega * dx2 * dy2 / ( dx2 + dy2) *
+				( ( p( i - 1, j ) + p( i + 1, j ) ) / dx2 + ( p( i, j - 1 ) + p( i, j + 1 ) ) / dy2 -
+				  rhs( i - 1, j - 1 ) );
+		}
+	}
 }

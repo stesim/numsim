@@ -42,6 +42,7 @@ int main( int argc, char* argv[] )
 	while( t < params.T )
 	{
 		real dt = computation.computeTimeStep();
+
 		computation.setVelocityBoundary( computation.u, computation.v );
 		computation.computeMomentumEquations( dt );
 		computation.setVelocityBoundary( computation.f, computation.g );
@@ -51,6 +52,7 @@ int main( int argc, char* argv[] )
 		real res = params.eps + 1.0;
 		while( iter < params.maxIter && res > params.eps )
 		{
+			computation.setPressureBoundary();
 			solver.SORCycle( computation.p, computation.rhs, params.omega );
 
 			++iter;
@@ -69,7 +71,10 @@ int main( int argc, char* argv[] )
 			IO::writeRawOutput( params.gridSize, computation.u, computation.v,
 					computation.p, h, step );
 
-			std::cout << "[Progress] Step: " << step << " Time: " << t << std::endl;
+			std::cout << "[Progress] Step " << step << ": " << (int)( t / params.T * 100.0 ) << "%" << std::endl
+				<< "  t:    " << t << std::endl
+				<< "  iter: " << iter << std::endl
+				<< "  res:  " << res << std::endl;
 		}
 	}
 

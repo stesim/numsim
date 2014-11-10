@@ -1,5 +1,6 @@
 #include "gridfunction.h"
 #include <cmath>
+#include <cstdio>
 
 #ifndef NULL
 #define NULL 0
@@ -252,5 +253,17 @@ void GridFunction::abs( const MultiIndex& begin,
 				m_pGridValues[ idx ] = -m_pGridValues[ idx ];
 			}
 		}
+	}
+}
+
+void GridFunction::print( const MultiIndex& begin, const MultiIndex& end ) const
+{
+	for( index_t j = begin.y; j < end.y; ++j )
+	{
+		for( index_t i = begin.x; i < end.x; ++i )
+		{
+			printf( "%12.4e", m_pGridValues[ j * m_miSize.x + i ] );
+		}
+		printf( "\n" );
 	}
 }
