@@ -1,25 +1,26 @@
 #ifndef SOLVER_H
 #define SOLVER_H
 
-#include "gridfunction.h"
-#include "stencil.h"
+#include "typedef.h"
 
 class Solver
 {
 public:
-	Solver( const MultiIndex& dim,
+	//! Compute SOR residual
+	//! \param p Pressure function
+	//! \param rhs Right hand side
+	static real computeResidual( const GridFunction& p,
+			const GridFunction& rhs,
 			const Point& h );
 
-	real computeResidual( const GridFunction& p,
-			const GridFunction& rhs );
-
-	void SORCycle( GridFunction& p,
+	//! Compute one SOR cycle
+	//! \param p Pressure function
+	//! \param rhs Right hand side
+	//! \param omega Relaxation factor
+	static void SORCycle( GridFunction& p,
 			const GridFunction& rhs,
+			const Point& h,
 			real omega );
-
-private:
-	MultiIndex   m_miSize;
-	Point        m_ptH;
 };
 
 #endif

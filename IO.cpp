@@ -172,7 +172,7 @@ real
 void
 IO::writeVTKFile (const MultiIndex & griddimension, const GridFunction & u,
 		  const GridFunction & v, const GridFunction & p,
-		  const Point & delta, int step)
+		  const Point & delta, const Params& params, int instance, int step)
 {
   real deltaX = delta[0];
   real deltaY = delta[1];
@@ -180,8 +180,8 @@ IO::writeVTKFile (const MultiIndex & griddimension, const GridFunction & u,
   index_t iMax = griddimension[0] - 1;
   index_t jMax = griddimension[1] - 1;
 
-  char numstr[21];
-  sprintf (numstr, "%d", step);
+  char numstr[32];
+  sprintf (numstr, "%d_%d", instance, step);
   std::string filename;
   filename.append ("./");
   filename.append ("field_");
@@ -191,23 +191,31 @@ IO::writeVTKFile (const MultiIndex & griddimension, const GridFunction & u,
   std::filebuf fb;
   fb.open (filename.c_str (), std::ios::out);
   std::ostream os (&fb);
+  if(os.fail())
+  {
+    std::cout << "Fehler beim \"Offnen von " << filename;
+    exit(1);
+  }
 
   os << "<?xml version=\"1.0\"?>" << std::endl
-    << "<VTKFile type=\"StructuredGrid\">" << std::endl
-    << "<StructuredGrid WholeExtent=\""
-    << "0" << " " << (iMax - 1) << " "
-    << "0" << " " << (jMax - 1) << " "
-    << "0" << " " << "0" << " "
-    << "\" GhostLevel=\"" << "1" << "\">" << std::endl
-    << "<Piece Extent=\""
-    << "0" << " " << (iMax - 1) << " "
-    << "0" << " " << (jMax - 1) << " "
-    << "0" << " " << "0" << " "
-    << "\">" << std::endl
-    << "<Points>" << std::endl
-    <<
-    "<DataArray type=\"Float64\" format=\"ascii\" NumberOfComponents=\"3\"> "
-    << std::endl;
+     << "<VTKFile type=\"StructuredGrid\">" << std::endl
+     << "<StructuredGrid WholeExtent=\""
+     << "0" << " " << (iMax - 1) << " "
+     << "0" << " " << (jMax - 1) << " "
+     << "0" << " " << "0" << " "
+     << "\" GhostLevel=\"" << "1" << "\">" << std::endl
+     << "<Piece Extent=\""
+     << "0" << " " << (iMax - 1) << " "
+     << "0" << " " << (jMax - 1) << " "
+     << "0" << " " << "0" << " "
+     << "\">" << std::endl
+     << "<Points>" << std::endl
+     //inputfile as comment:
+     << "<!-- " ;
+  params.print(os);
+  os << "--> " << std::endl;
+  os << "<DataArray type=\"Float64\" format=\"ascii\" NumberOfComponents=\"3\"> "
+     << std::endl;
   for (int i = 0; i < iMax; ++i)
     {
       for (int j = 0; j < jMax; ++j)
@@ -218,9 +226,9 @@ IO::writeVTKFile (const MultiIndex & griddimension, const GridFunction & u,
     }
   os << "</DataArray>" << std::endl
     << "</Points>" << std::endl
-    << "<PointData Vectors=\"field\"  Scalars=\"P\">"
+    << "<PointData Vectors=\"u\"  Scalars=\"P\">"
     << std::endl <<
-    "<DataArray Name=\"field\" NumberOfComponents=\"3\" type=\"Float64\" >" <<
+    "<DataArray Name=\"u\" NumberOfComponents=\"3\" type=\"Float64\" >" <<
     std::endl;
   for (int i = 0; i < iMax; ++i)
     {
@@ -259,10 +267,11 @@ IO::writeVTKFile (const MultiIndex & griddimension, const GridFunction & u,
 
 void IO::writeRawOutput( const MultiIndex& griddimension,
 		const GridFunction& u, const GridFunction& v,
-		const GridFunction& p, const Point& delta, index_t step )
+		const GridFunction& p, const Point& delta, index_t instance,
+		index_t step )
 {
 	char filename[ 256 ];
-	sprintf( filename, "field-uvp-%d.txt", step );
+	sprintf( filename, "field-uvp-%d-%d.txt", instance, step );
 
 	std::ofstream os( filename );
 

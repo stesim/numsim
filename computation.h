@@ -2,50 +2,54 @@
 #define COMPUTATION_H
 
 #include "typedef.h"
-#include "gridfunction.h"
-#include "stencil.h"
 #include "params.h"
 
 class Computation
 {
 public:
-	Computation( const Params& params );
+	//! Compute time step
+	static real computeTimeStep( const GridFunction& u,
+			const GridFunction& v,
+			const Point& h,
+			real Re,
+			real tau );
 
-	real computeTimeStep();
+	//! Compute velocities from intermediate velocities
+	//! \param dt Time step
+	static void computeNewVelocities( GridFunction& u,
+			GridFunction& v,
+			const GridFunction& f,
+			const GridFunction& g,
+			const GridFunction& p,
+			const Point& h,
+			real dt );
 
-	void computeNewVelocities( real dt );
+	//! Compute intermediate velocities using the momentum equations
+	//! \param dt Time step
+	static void computeMomentumEquations( GridFunction& f,
+			GridFunction& g,
+			const GridFunction& u,
+			const GridFunction& v,
+			const Point& h,
+			real dt,
+			real Re,
+			real alpha );
 
-	void computeMomentumEquations( real dt );
+	//! Compute the right hand side of the linear system for the pressure
+	//! \param dt Time step
+	static void computeRightHandSide( GridFunction& rhs,
+			const GridFunction& f,
+			const GridFunction& g,
+			const Point& h,
+			real dt );
 
-	void computeRightHandSide( real dt );
+	//! Set (intermediate) velocity boundary values
+	//! \param u First velocity component
+	//! \param u Second velocity component
+	static void setVelocityBoundary( GridFunction& u, GridFunction& v );
 
-	void setVelocityBoundary( GridFunction& u, GridFunction& v );
-
-	void setPressureBoundary();
-
-private:
-	Params m_Params;
-	Point  h;
-
-public:
-	GridFunction u;
-	GridFunction v;
-	GridFunction f;
-	GridFunction g;
-	GridFunction p;
-	GridFunction rhs;
-
-private:
-	GridFunction m_funcTemp1;
-	GridFunction m_funcTemp2;
-	GridFunction m_funcTemp3;
-
-	Stencil m_stDxBw;
-	Stencil m_stDyBw;
-	Stencil m_stDxx;
-	Stencil m_stDyy;
-	Stencil m_stInterpx;
-	Stencil m_stInterpy;
+	//! Set pressure boundary values
+	static void setPressureBoundary( GridFunction& p );
 };
 
 #endif

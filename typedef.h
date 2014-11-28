@@ -7,7 +7,8 @@
 #ifndef TYPEDEF
 #define TYPEDEF
 
-#include "template.h"
+//#include "template.h"
+#include "metamath/mmfunction.h"
 
 /*! Creates a type name for RealType */
 typedef double real;
@@ -16,9 +17,11 @@ typedef double real;
 typedef int index_t;
 
 /*! Creates a type name for MultiIndexType */
-typedef Tuple2<index_t> MultiIndex;
+typedef mm::Tuple<index_t, 2> MultiIndex;
 
 /*! Creates a type name for PointType */
-typedef Tuple2<real> Point;
+typedef mm::Tuple<real, 2> Point;
+
+typedef mm::Function<real, 2> GridFunction;
 
 #endif

@@ -1,52 +1,39 @@
 #include "solver.h"
 #include <cmath>
+#include <cassert>
+#include "metamath/metamath.h"
+#include "metamath/mmutils.h"
 
-Solver::Solver( const MultiIndex& dim,
-		const Point& h )
-	: m_miSize( dim ),
-	m_ptH( h )
-{
-}
+using namespace mm;
 
 real Solver::computeResidual( const GridFunction& p,
-		const GridFunction& rhs )
+		const GridFunction& rhs,
+		const Point& h )
 {
-	assert( p.getSize() - MultiIndex( 2, 2 ) == m_miSize &&
-			rhs.getSize() == m_miSize );
+	assert( p.size() - MultiIndex( 2, 2 ) == m_miSize &&
+			rhs.size() == m_miSize );
 
-	real dx2 = m_ptH.x * m_ptH.x;
-	real dy2 = m_ptH.y * m_ptH.y;
-	real sum = 0.0;
-	for( index_t j = 1; j < p.getSize().y - 1; ++j )
-	{
-		for( index_t i = 1; i < p.getSize().x - 1; ++i )
-		{
-			real res_loc = ( p( i + 1, j ) - 2.0 * p( i, j ) + p( i - 1, j ) ) / dx2 +
-				( p( i, j + 1 ) - 2.0 * p( i, j ) + p( i, j - 1 ) ) / dy2 - rhs( i - 1, j - 1 );
-			sum += res_loc * res_loc;
-		}
-	}
+	real sum = mm::sum( sqr( utils::diffXX_YY( eval<+1,+1>( p ), h ) - rhs ),
+			MultiIndex::ZERO, rhs.size() );
 	
-	return std::sqrt( sum / ( ( p.getSize().y - 2 ) * ( p.getSize().x - 2 ) ) );
+	return std::sqrt( sum / ( rhs.size().y * rhs.size().x ) );
 }
 
 void Solver::SORCycle( GridFunction& p,
 		const GridFunction& rhs,
+		const Point& h,
 		real omega )
 {
-	assert( p.getSize() - MultiIndex( 2, 2 ) == m_miSize &&
-			rhs.getSize() == m_miSize );
+	assert( p.size() - MultiIndex( 2, 2 ) == m_miSize &&
+			rhs.size() == m_miSize );
 
-	real dx2 = m_ptH.x * m_ptH.x;
-	real dy2 = m_ptH.y * m_ptH.y;
+	real dx2 = h.x * h.x;
+	real dy2 = h.y * h.y;
 
-	for( index_t j = 1; j < p.getSize().y - 1; ++j )
-	{
-		for( index_t i = 1; i < p.getSize().x - 1; ++i )
-		{
-			p( i, j ) = ( 1.0 - omega ) * p( i, j ) + 0.5 * omega * dx2 * dy2 / ( dx2 + dy2) *
-				( ( p( i - 1, j ) + p( i + 1, j ) ) / dx2 + ( p( i, j - 1 ) + p( i, j + 1 ) ) / dy2 -
-				  rhs( i - 1, j - 1 ) );
-		}
-	}
+	// "HACK": use p as source and image function
+	// -> both old and new values are used in the calculations (Gauss-Seidel)
+	set( p, MultiIndex::ONE, p.size() - MultiIndex::ONE,
+			( 1.0 - omega ) % p + 0.5 * omega * dx2 * dy2 / ( dx2 + dy2 ) % (
+				1 / dx2 % ( eval<-1,0>( p ) + eval<+1,0>( p ) ) +  1 / dy2 % ( eval<0,-1>( p ) + eval<0,+1>( p ) )
+				- eval<-1,-1>( rhs ) ) );
 }
