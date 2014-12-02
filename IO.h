@@ -43,10 +43,9 @@ public:
    * \param instance The number of instance.
    * \param step The number of the timestep.
    */
-  static void writeRawOutput( const MultiIndex& griddimension,
-		  const GridFunction& u, const GridFunction& v,
-		  const GridFunction& p, const Point& delta, index_t instance,
-		  index_t step );
+  static void writeRawOutput( const GridFunction& u, const GridFunction& v,
+		  const GridFunction& p, const Point& delta, const Point& offset,
+		  index_t step, const MultiIndex& rank );
 
   /*!
    * Methods reads the simulation parameters from the specified input file.

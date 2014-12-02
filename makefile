@@ -1,5 +1,5 @@
 
-CXX := g++
+CXX := mpic++ #g++
 SRC := $(wildcard *.cpp)
 OBJ := $(SRC:%.cpp=%.o)
 CXXDEPENDFILE := .depend
@@ -44,7 +44,7 @@ $(CXXDEPENDFILE): $(SRC) $(SRCPROTO)
 -include $(CXXDEPENDFILE)
 
 run: $(TARGET)
-	./$(TARGET)
+	mpirun -n 4 ./$(TARGET)
 
 debug: $(TARGET)
 	gdb $(TARGET)

@@ -26,6 +26,7 @@ struct Params
       << "  Domain size:           "            << domainSize.x       << " x " << domainSize.y << std::endl
       << "  Grid size:             "            << gridSize.x         << " x " << gridSize.y   << std::endl
       << "  T:                     "            << T                  <<                          std::endl
+      << "  Re:                    "            << Re                 <<                          std::endl
       << "  dt:                    "            << dt                 <<                          std::endl
       << "  tau:                   "            << tau                <<                          std::endl
       << "  Output time step:      "            << deltaVec           <<                          std::endl
@@ -33,7 +34,6 @@ struct Params
       << "  SOR error tolerance:   "            << eps                <<                          std::endl
       << "  Relaxation factor:     "            << omega              <<                          std::endl
       << "  Upwinding factor:      "            << alpha              <<                          std::endl
-      << "  Re:                    "            << Re                 <<                          std::endl
       << "  Initial velocity:      ("           << initialVelocity.x  << "," << initialVelocity.y << ")" << std::endl
       << "  Initial pressure:      "            << initialPressure    << std::endl;
   }

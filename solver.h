@@ -11,6 +11,7 @@ public:
 	//! \param rhs Right hand side
 	static real computeResidual( const GridFunction& p,
 			const GridFunction& rhs,
+			const MultiIndex& gridSize,
 			const Point& h );
 
 	//! Compute one SOR cycle
@@ -21,6 +22,17 @@ public:
 			const GridFunction& rhs,
 			const Point& h,
 			real omega );
+
+	//! Compute half a SOR cycle (red/black)
+	//! \param p Pressure function
+	//! \param rhs Right hand side
+	//! \param omega Relaxation factor
+	//! \param subcycle Subcycle index (red/black)
+	static void SORSubcycle( GridFunction& p,
+			const GridFunction& rhs,
+			const Point& h,
+			real omega,
+			bool color );
 };
 
 #endif

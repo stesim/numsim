@@ -1,13 +1,6 @@
-//! Typedefs for the apllication 
-/*!
- * @author diehlpk
- * @date 2012
- */
+#ifndef TYPEDEF_H
+#define TYPEDEF_H
 
-#ifndef TYPEDEF
-#define TYPEDEF
-
-//#include "template.h"
 #include "metamath/mmfunction.h"
 
 /*! Creates a type name for RealType */
