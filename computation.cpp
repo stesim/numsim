@@ -93,6 +93,27 @@ void Computation::computeRightHandSide( GridFunction& rhs,
 			+ utils::diffY_Fw( eval<+1,+1>( g ), h.y ) );
 }
 
+void Computation::computeVelocityPotential( GridFunction& psi,
+		const GridFunction& u,
+		const GridFunction& v,
+		const Point& h )
+{
+	// use d(psi)/dx=-v instead of d(psi)/dy=u for more efficient memory access patterns
+	//  => psi_ij = psi_(i-1)j - v_ij*dx, psi_0j = <boundary value>
+
+	// "HACK": use psi as source and image function to accumulate values
+	set( psi, MultiIndex( 1, 0 ), psi.size(),
+			eval<-1,0>( psi ) - h.x % eval<0,+1>( v ) );
+}
+
+void Computation::computeVorticity( GridFunction& zeta,
+		const GridFunction& u,
+		const GridFunction& v,
+		const Point& h )
+{
+	zeta = utils::diffY_Fw( eval<+2,+1>( u ), h.y ) - utils::diffX_Fw( eval<+1,+2>( v ), h.x );
+}
+
 void Computation::setVelocityBoundary( GridFunction& u, GridFunction& v,
 		bool left, bool top, bool right, bool bottom )
 {

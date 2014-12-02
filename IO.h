@@ -32,19 +32,25 @@ public:
 		     const GridFunction & p, const Point & delta, const Params& params,
 			 int instance, int step);
 
-  //! Method writes the GridFunctions u,v,p in a text data format to the hard disk. 
-  //! The files are named in the following convention: field-(instance)-(step).txt
+  //! Method writes the GridFunctions u,v,p to a common text file as well as psi and zeta in separate ones.
+  //! The files are named in the following convention respectively:
+  //!   field-uvp-step-(step)-rank-(rank.x)-(rank.y).txt
+  //!   field-psi-step-(step)-rank-(rank.x)-(rank.y).txt
+  //!   field-zeta-step-(step)-rank-(rank.x)-(rank.y).txt
   /*!
    * \param griddimension The dimension of the gridfunctions.
    * \param u The gridfunction u.
    * \param v The gridfunction v.
    * \param p The gridfunction p.
+   * \param psi The gridfunction psi.
+   * \param zeta The gridfunction zeta.
    * \param delta The mesh width in x direction and y direction
    * \param instance The number of instance.
    * \param step The number of the timestep.
    */
   static void writeRawOutput( const GridFunction& u, const GridFunction& v,
-		  const GridFunction& p, const Point& delta, const Point& offset,
+		  const GridFunction& p, const GridFunction& psi,
+		  const GridFunction& zeta, const Point& delta, const Point& offset,
 		  index_t step, const MultiIndex& rank );
 
   /*!

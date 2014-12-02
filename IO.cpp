@@ -2,6 +2,7 @@
 #include <cstring>
 #include <string>
 #include <cstdlib>
+#include <cmath>
 
 using std::size_t;
 
@@ -266,19 +267,20 @@ IO::writeVTKFile (const MultiIndex & griddimension, const GridFunction & u,
 }
 
 void IO::writeRawOutput( const GridFunction& u, const GridFunction& v,
-		const GridFunction& p, const Point& delta, const Point& offset,
+		const GridFunction& p, const GridFunction& psi,
+		const GridFunction& zeta, const Point& delta, const Point& offset,
 		index_t step, const MultiIndex& rank )
 {
 	char filename[ 256 ];
+	MultiIndex griddimension;
+
 	sprintf( filename, "field-uvp-step-%06d-rank-%03d-%03d.txt",
 			step, rank.x, rank.y );
-
-	MultiIndex griddimension = p.size() - MultiIndex( 2, 2 );
-
 	std::ofstream os( filename );
 
-	os << griddimension.x << ' ' << griddimension.y << std::endl;
+	griddimension = p.size() - MultiIndex( 2, 2 );
 
+	os << griddimension.x << ' ' << griddimension.y << std::endl;
 	for( int j = 0; j < griddimension.y; ++j )
 	{
 		real y = offset.y + j * delta.y + delta.y / 2.0;
@@ -288,9 +290,46 @@ void IO::writeRawOutput( const GridFunction& u, const GridFunction& v,
 			real interpU = ( u( i + 1, j + 1 ) + u( i + 2, j + 1 ) ) / 2.0;
 			real interpV = ( v( i + 1, j + 1 ) + v( i + 1, j + 2 ) ) / 2.0;
 			os << std::scientific << x << ' ' << y << ' ' << interpU << ' '
-				<< interpV << ' ' << p( i + 1, j + 1 ) << std::endl;
+				<< interpV << ' ' << p( i + 1, j + 1 ) << ' ' << std::endl;
 		}
 	}
-
 	os.close();
+
+	sprintf( filename, "field-psi-step-%06d-rank-%03d-%03d.txt",
+			step, rank.x, rank.y );
+	std::ofstream os2( filename );
+
+	griddimension = psi.size();
+
+	os2 << griddimension.x << ' ' << griddimension.y << std::endl;
+	for( int j = 0; j < griddimension.y; ++j )
+	{
+		real y = offset.y + j * delta.y;
+		for( int i = 0; i < griddimension.x; ++i )
+		{
+			real x = offset.x + i * delta.x;
+			os2 << std::scientific << x << ' ' << y << ' ' << psi( i, j )
+				<< std::endl;
+		}
+	}
+	os2.close();
+
+	sprintf( filename, "field-zeta-step-%06d-rank-%03d-%03d.txt",
+			step, rank.x, rank.y );
+	std::ofstream os3( filename );
+
+	griddimension = zeta.size();
+
+	os3 << griddimension.x << ' ' << griddimension.y << std::endl;
+	for( int j = 0; j < griddimension.y; ++j )
+	{
+		real y = offset.y + ( j + 1 ) * delta.y;
+		for( int i = 0; i < griddimension.x; ++i )
+		{
+			real x = offset.x + ( i + 1 ) * delta.x;
+			os3 << std::scientific << x << ' ' << y << ' ' << zeta( i, j )
+				<< std::endl;
+		}
+	}
+	os3.close();
 }

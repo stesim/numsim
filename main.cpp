@@ -84,6 +84,16 @@ void simulate( const char* filename, int instance )
 	GridFunction p( localGridSize + MultiIndex( 2, 2 ) );
 	GridFunction rhs( localGridSize );
 
+	GridFunction psi( localGridSize + MultiIndex::ONE );
+	GridFunction zeta( localGridSize - MultiIndex::ONE );
+
+	// set boundary values of psi once
+	if( leftBoundary )
+	{
+		set( psi, MultiIndex::ZERO, MultiIndex( 1, psi.size().y ),
+				constant( 0.0 ) );
+	}
+
 	u = constant( params.initialVelocity.x );
 	v = constant( params.initialVelocity.y );
 	p = constant( params.initialPressure );
@@ -92,6 +102,9 @@ void simulate( const char* filename, int instance )
 	g = constant( params.initialVelocity.y );
 
 	tick();
+
+	Computation::setVelocityBoundary( u, v,
+			leftBoundary, topBoundary, rightBoundary, bottomBoundary );
 
 	real t = 0.0;
 	index_t step = 0;
@@ -102,16 +115,14 @@ void simulate( const char* filename, int instance )
 
 		real dt = Computation::computeTimeStep(
 				u, v, h, params.Re, params.tau );
-
-		Computation::setVelocityBoundary( u, v,
-				leftBoundary, topBoundary, rightBoundary, bottomBoundary );
 		
 		// compute intermediate velocities
 		Computation::computeMomentumEquations(
 				f, g, u, v, h, dt, params.Re, params.alpha );
 		Computation::setVelocityBoundary( f, g,
 				leftBoundary, topBoundary, rightBoundary, bottomBoundary );
-		Communication::exchangeVelocities( f, g );
+		Communication::exchangeFunctionBoundary( f, MultiIndex( 2, 1 ) );
+		Communication::exchangeFunctionBoundary( g, MultiIndex( 1, 2 ) );
 
 		Computation::computeRightHandSide( rhs, f, g, h, dt );
 
@@ -125,9 +136,9 @@ void simulate( const char* filename, int instance )
 					leftBoundary, topBoundary, rightBoundary, bottomBoundary );
 
 			Solver::SORSubcycle( p, rhs, h, params.omega, true );
-			Communication::exchangePressure( p );
+			Communication::exchangeFunctionBoundary( p, MultiIndex::ONE );
 			Solver::SORSubcycle( p, rhs, h, params.omega, false );
-			Communication::exchangePressure( p );
+			Communication::exchangeFunctionBoundary( p, MultiIndex::ONE );
 
 			res = Solver::computeResidual( p, rhs, params.gridSize, h );
 
@@ -136,8 +147,13 @@ void simulate( const char* filename, int instance )
 
 		real timeEndSOR = tock();
 
+		// compute new velocities
 		Computation::computeNewVelocities( u, v, f, g, p, h, dt );
-		Communication::exchangeVelocities( u, v );
+		Communication::exchangeFunctionBoundary( u, MultiIndex( 2, 1 ) );
+		Communication::exchangeFunctionBoundary( v, MultiIndex( 1, 2 ) );
+
+		Computation::setVelocityBoundary( u, v,
+				leftBoundary, topBoundary, rightBoundary, bottomBoundary );
 
 		real timeEndStep = tock();
 
@@ -148,7 +164,18 @@ void simulate( const char* filename, int instance )
 		if( step <= 1 || tOut > params.deltaVec || t >= params.T )
 		{
 			tOut -= params.deltaVec;
-			IO::writeRawOutput( u, v, p, h, localGridOffset, step, commRank );
+
+			// compute velocity potential and vorticity
+			Communication::receiveBoundary(
+					psi, Communication::BOUNDARY_LEFT, false );
+			Computation::computeVelocityPotential( psi, u, v, h );
+			Communication::sendBoundary(
+					psi, Communication::BOUNDARY_RIGHT, 0, false );
+
+			Computation::computeVorticity( zeta, u, v, h );
+
+			IO::writeRawOutput( u, v, p, psi, zeta,
+					h, localGridOffset, step, commRank );
 			/*
 			IO::writeVTKFile( params.gridSize, u, v,
 					p, h, params, instance, step );

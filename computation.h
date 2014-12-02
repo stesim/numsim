@@ -61,6 +61,26 @@ public:
 			const Point& h,
 			real dt );
 
+	//! Compute the velocity potential function
+	//! \param psi Velocity potential
+	//! \param u First velocity component
+	//! \param v Second velocity component
+	//! \param h Spacial step size
+	static void computeVelocityPotential( GridFunction& psi,
+			const GridFunction& u,
+			const GridFunction& v,
+			const Point& h );
+
+	//! Compute the vorticity function
+	//! \param zeta Vorticity
+	//! \param u First velocity component
+	//! \param v Second velocity component
+	//! \param h Spacial step size
+	static void computeVorticity( GridFunction& zeta,
+			const GridFunction& u,
+			const GridFunction& v,
+			const Point& h );
+
 	//! Set (intermediate) velocity boundary values
 	//! \param u First velocity component
 	//! \param v Second velocity component

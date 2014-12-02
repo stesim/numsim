@@ -12,6 +12,12 @@ MultiIndex         Communication::s_Rank;
 int                Communication::s_iSize;
 int                Communication::s_iRank;
 
+int                Communication::s_iRankLeft;
+int                Communication::s_iRankRight;
+int                Communication::s_iRankTop;
+int                Communication::s_iRankBottom;
+bool               Communication::s_SendRecvOrder;
+
 void Communication::init( int& argc, char**& argv )
 {
 	MPI_Init( &argc, &argv );
@@ -23,6 +29,12 @@ void Communication::init( int& argc, char**& argv )
 
 	s_Rank.y = s_iRank / s_Size.x;
 	s_Rank.x = s_iRank % s_Size.x;
+	
+	s_iRankLeft = rankTo1D( s_Rank - MultiIndex( 1, 0 ) );
+	s_iRankRight = rankTo1D( s_Rank + MultiIndex( 1, 0 ) );
+	s_iRankTop = rankTo1D( s_Rank + MultiIndex( 0, 1 ) );
+	s_iRankBottom = rankTo1D( s_Rank - MultiIndex( 0, 1 ) );
+	s_SendRecvOrder = ( ( ( s_Rank.x + s_Rank.y ) % 2 ) == 0 );
 }
 
 void Communication::finalize()
@@ -43,17 +55,6 @@ const MultiIndex& Communication::rank()
 int Communication::linearRank()
 {
 	return s_iRank;
-}
-
-void Communication::exchangePressure( GridFunction& p )
-{
-	exchangeFunctionBoundary( p, MultiIndex::ONE, 1 );
-}
-
-void Communication::exchangeVelocities( GridFunction& u, GridFunction& v )
-{
-	exchangeFunctionBoundary( u, MultiIndex( 2, 1 ), 2 );
-	exchangeFunctionBoundary( v, MultiIndex( 1, 2 ), 3 );
 }
 
 real Communication::min( const real& local )
@@ -111,142 +112,237 @@ int Communication::rankTo1D( const MultiIndex& rank, bool cyclic )
 // alternate between send and receive in successive processes
 // e.g. Proc1 sends to Proc2 while Proc2 receives from Proc1
 #define ALTERNATE_SEND_RECV(arg,sendCode,recvCode) if( arg ) {\
-	sendCode\
-	recvCode\
+	sendCode;\
+	recvCode;\
 } else {\
-	recvCode\
-	sendCode\
+	recvCode;\
+	sendCode;\
 }
 
 void Communication::exchangeFunctionBoundary( GridFunction& f,
-		const MultiIndex& readOffset, int tag )
+		const MultiIndex& readOffset )
 {
-	static const int rankLeft = rankTo1D( s_Rank - MultiIndex( 1, 0 ) );
-	static const int rankRight = rankTo1D( s_Rank + MultiIndex( 1, 0 ) );
-	static const int rankTop = rankTo1D( s_Rank + MultiIndex( 0, 1 ) );
-	static const int rankBottom = rankTo1D( s_Rank - MultiIndex( 0, 1 ) );
-	static const bool sendRecvOrder = ( ( ( s_Rank.x + s_Rank.y ) % 2 ) == 0 );
-
 	MPI_Status stat;
 
-	// itermediate (linear) buffer for vertical boundaries
+	// itermediate linear buffer for vertical boundaries
 	GridFunction transposedBoundary( MultiIndex( f.size().y - 2, 1 ) );
 
-	ALTERNATE_SEND_RECV( sendRecvOrder,
-		// send left
-		if( rankLeft >= 0 )
-		{
-			FunctionView<GridFunction> fViewRead = view( f,
-				MultiIndex( readOffset.x, 1 ),
-				MultiIndex( readOffset.x + 1, f.size().y - 1 ) );
-			transposedBoundary = transpose( fViewRead );
-			MPI_Send( &transposedBoundary( 0, 0 ),
-				transposedBoundary.size().x,
-				REAL_MPI,
-				rankLeft,
-				tag,
-				comm );
-		}
-	,
-		// receive right
-		if( rankRight >= 0 )
-		{
-			FunctionView<GridFunction> fViewWrite = view( f,
-				MultiIndex( f.size().x - 1, 1 ),
-				f.size() - MultiIndex( 0, 1 ) );
-			MPI_Recv( &transposedBoundary( 0, 0 ),
-				transposedBoundary.size().x,
-				REAL_MPI,
-				rankRight,
-				tag,
-				comm,
-				&stat );
-			fViewWrite = transpose( transposedBoundary );
-		}
-	)
+	ALTERNATE_SEND_RECV( s_SendRecvOrder,
+			sendLeft( f, readOffset.x, transposedBoundary, true ),
+			recvRight( f, stat, transposedBoundary, true ) );
 
-	ALTERNATE_SEND_RECV( sendRecvOrder,
-		// send right
-		if( rankRight >= 0 )
-		{
-			FunctionView<GridFunction> fViewRead = view( f,
-				MultiIndex( f.size().x - readOffset.x - 1, 1 ),
-				f.size() - MultiIndex( readOffset.x, 1 ) );
-			transposedBoundary = transpose( fViewRead );
-			MPI_Send( &transposedBoundary( 0, 0 ),
-				transposedBoundary.size().x,
-				REAL_MPI,
-				rankRight,
-				tag,
-				comm );
-		}
-	,
-		// receive left
-		if( rankLeft >= 0 )
-		{
-			FunctionView<GridFunction> fViewWrite = view( f,
-				MultiIndex( 0, 1 ),
-				MultiIndex( 1, f.size().y - 1 ) );
-			MPI_Recv( &transposedBoundary( 0, 0 ),
-				transposedBoundary.size().x,
-				REAL_MPI,
-				rankLeft,
-				tag,
-				comm,
-				&stat );
-			fViewWrite = transpose( transposedBoundary );
-		}
-	)
+	ALTERNATE_SEND_RECV( s_SendRecvOrder,
+			sendRight( f, readOffset.x, transposedBoundary, true ),
+			recvLeft( f, stat, transposedBoundary, true ) );
 
-	ALTERNATE_SEND_RECV( sendRecvOrder,
-		// send bottom
-		if( rankBottom >= 0 )
-		{
-			MPI_Send( &f( 1, readOffset.y ),
-				f.size().x - 2,
-				REAL_MPI,
-				rankBottom,
-				tag,
-				comm );
-		}
-	,
-		// receive top
-		if( rankTop >= 0 )
-		{
-			MPI_Recv( &f( 1, f.size().y - 1 ),
-				f.size().x - 2,
-				REAL_MPI,
-				rankTop,
-				tag,
-				comm,
-				&stat );
-		}
-	)
+	ALTERNATE_SEND_RECV( s_SendRecvOrder,
+			sendTop( f, readOffset.y, true ),
+			recvBottom( f, stat, true ) );
 
-	ALTERNATE_SEND_RECV( sendRecvOrder,
-		// send top
-		if( rankTop >= 0 )
-		{
-			MPI_Send( &f( 1, f.size().y - readOffset.y - 1 ),
-				f.size().x - 2,
-				REAL_MPI,
-				rankTop,
-				tag,
-				comm );
-		}
-	,
-		// receive bottom
-		if( rankBottom >= 0 )
-		{
-			MPI_Recv( &f( 1, 0 ),
-				f.size().x - 2,
-				REAL_MPI,
-				rankBottom,
-				tag,
-				comm,
-				&stat );
-		}
-	)
+	ALTERNATE_SEND_RECV( s_SendRecvOrder,
+			sendBottom( f, readOffset.y, true ),
+			recvTop( f, stat, true ) );
 }
 
 #undef ALTERNATE_SEND_RECV
+
+void Communication::sendBoundary( GridFunction& f, Boundary boundary,
+		int readOffset, bool excludeCorners )
+{
+	switch( boundary )
+	{
+		case BOUNDARY_LEFT:
+		{
+			GridFunction transposedBoundary(
+					MultiIndex( f.size().y - 2 * excludeCorners, 1 ) );
+			sendLeft( f, readOffset, transposedBoundary, excludeCorners );
+			break;
+		}
+		case BOUNDARY_TOP:
+		{
+			sendTop( f, readOffset, excludeCorners );
+			break;
+		}
+		case BOUNDARY_RIGHT:
+		{
+			GridFunction transposedBoundary(
+					MultiIndex( f.size().y - 2 * excludeCorners, 1 ) );
+			sendRight( f, readOffset, transposedBoundary, excludeCorners );
+			break;
+		}
+		case BOUNDARY_BOTTOM:
+		{
+			sendBottom( f, readOffset, excludeCorners );
+			break;
+		}
+		default:
+			break;
+	}
+}
+
+void Communication::receiveBoundary(
+		GridFunction& f, Boundary boundary, bool excludeCorners )
+{
+	MPI_Status stat;
+	switch( boundary )
+	{
+		case BOUNDARY_LEFT:
+		{
+			GridFunction transposedBoundary(
+					MultiIndex( f.size().y - 2 * excludeCorners, 1 ) );
+			recvLeft( f, stat, transposedBoundary, excludeCorners );
+			break;
+		}
+		case BOUNDARY_TOP:
+		{
+			recvTop( f, stat, excludeCorners );
+			break;
+		}
+		case BOUNDARY_RIGHT:
+		{
+			GridFunction transposedBoundary(
+					MultiIndex( f.size().y - 2 * excludeCorners, 1 ) );
+			recvRight( f, stat, transposedBoundary, excludeCorners );
+			break;
+		}
+		case BOUNDARY_BOTTOM:
+		{
+			recvBottom( f, stat, excludeCorners );
+			break;
+		}
+		default:
+			break;
+	}
+}
+
+void Communication::sendLeft( const GridFunction& f, int offset,
+		GridFunction& transposedBoundary, bool excludeCorners )
+{
+	if( s_iRankLeft >= 0 )
+	{
+		FunctionView<const GridFunction> fViewRead = view( f,
+			MultiIndex( offset, excludeCorners ),
+			MultiIndex( offset + 1, f.size().y - excludeCorners ) );
+		transposedBoundary = transpose( fViewRead );
+		MPI_Send( &transposedBoundary( 0, 0 ),
+			f.size().y - 2 * excludeCorners,
+			REAL_MPI,
+			s_iRankLeft,
+			1,
+			comm );
+	}
+}
+
+void Communication::sendTop(
+		const GridFunction& f, int offset, bool excludeCorners )
+{
+	if( s_iRankTop >= 0 )
+	{
+		MPI_Send( &f( excludeCorners, f.size().y - offset - 1 ),
+			f.size().x - 2 * excludeCorners,
+			REAL_MPI,
+			s_iRankTop,
+			1,
+			comm );
+	}
+}
+
+void Communication::sendRight( const GridFunction& f, int offset,
+		GridFunction& transposedBoundary, bool excludeCorners )
+{
+	if( s_iRankRight >= 0 )
+	{
+		FunctionView<const GridFunction> fViewRead = view( f,
+			MultiIndex( f.size().x - offset - 1, excludeCorners ),
+			f.size() - MultiIndex( offset, excludeCorners ) );
+		transposedBoundary = transpose( fViewRead );
+		MPI_Send( &transposedBoundary( 0, 0 ),
+			f.size().y - 2 * excludeCorners,
+			REAL_MPI,
+			s_iRankRight,
+			1,
+			comm );
+	}
+}
+
+void Communication::sendBottom(
+		const GridFunction& f, int offset, bool excludeCorners )
+{
+	if( s_iRankBottom >= 0 )
+	{
+		MPI_Send( &f( excludeCorners, offset ),
+			f.size().x - 2 * excludeCorners,
+			REAL_MPI,
+			s_iRankBottom,
+			1,
+			comm );
+	}
+}
+
+void Communication::recvLeft( GridFunction& f, MPI_Status& stat,
+		GridFunction& transposedBoundary, bool excludeCorners )
+{
+	if( s_iRankLeft >= 0 )
+	{
+		FunctionView<GridFunction> fViewWrite = view( f,
+			MultiIndex( 0, excludeCorners ),
+			MultiIndex( 1, f.size().y - excludeCorners ) );
+		MPI_Recv( &transposedBoundary( 0, 0 ),
+			f.size().y - 2 * excludeCorners,
+			REAL_MPI,
+			s_iRankLeft,
+			1,
+			comm,
+			&stat );
+		fViewWrite = transpose( transposedBoundary );
+	}
+}
+
+void Communication::recvTop(
+		GridFunction& f, MPI_Status& stat, bool excludeCorners )
+{
+	if( s_iRankTop >= 0 )
+	{
+		MPI_Recv( &f( excludeCorners, f.size().y - 1 ),
+			f.size().x - 2 * excludeCorners,
+			REAL_MPI,
+			s_iRankTop,
+			1,
+			comm,
+			&stat );
+	}
+}
+
+void Communication::recvRight( GridFunction& f, MPI_Status& stat,
+		GridFunction& transposedBoundary, bool excludeCorners )
+{
+	if( s_iRankRight >= 0 )
+	{
+		FunctionView<GridFunction> fViewWrite = view( f,
+			MultiIndex( f.size().x - 1, excludeCorners ),
+			f.size() - MultiIndex( 0, excludeCorners ) );
+		MPI_Recv( &transposedBoundary( 0, 0 ),
+			f.size().y - 2 * excludeCorners,
+			REAL_MPI,
+			s_iRankRight,
+			1,
+			comm,
+			&stat );
+		fViewWrite = transpose( transposedBoundary );
+	}
+}
+
+void Communication::recvBottom(
+		GridFunction& f, MPI_Status& stat, bool excludeCorners )
+{
+	if( s_iRankBottom >= 0 )
+	{
+		MPI_Recv( &f( excludeCorners, 0 ),
+			f.size().x - 2 * excludeCorners,
+			REAL_MPI,
+			s_iRankBottom,
+			1,
+			comm,
+			&stat );
+	}
+}
