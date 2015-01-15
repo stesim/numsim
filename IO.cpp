@@ -210,13 +210,13 @@ IO::writeVTKFile (const MultiIndex & griddimension, const GridFunction & u,
 void IO::writeRawOutput( const GridFunction& u, const GridFunction& v,
 		const GridFunction& p, const GridFunction& psi,
 		const GridFunction& zeta, const Point& delta, const Point& offset,
-		index_t step, const MultiIndex& rank )
+		index_t instance, index_t step, const MultiIndex& rank )
 {
 	char filename[ 256 ];
 	MultiIndex griddimension;
 
-	sprintf( filename, "field-uvp-step-%06d-rank-%03d-%03d.txt",
-			step, rank.x, rank.y );
+	sprintf( filename, "field-uvp-instance-%03d-step-%06d-rank-%03d-%03d.txt",
+			instance, step, rank.x, rank.y );
 	std::ofstream os( filename );
 
 	griddimension = p.size() - MultiIndex( 2, 2 );
@@ -236,8 +236,8 @@ void IO::writeRawOutput( const GridFunction& u, const GridFunction& v,
 	}
 	os.close();
 
-	sprintf( filename, "field-psi-step-%06d-rank-%03d-%03d.txt",
-			step, rank.x, rank.y );
+	sprintf( filename, "field-psi-instance-%03d-step-%06d-rank-%03d-%03d.txt",
+			instance, step, rank.x, rank.y );
 	std::ofstream os2( filename );
 
 	griddimension = psi.size();
@@ -255,8 +255,8 @@ void IO::writeRawOutput( const GridFunction& u, const GridFunction& v,
 	}
 	os2.close();
 
-	sprintf( filename, "field-zeta-step-%06d-rank-%03d-%03d.txt",
-			step, rank.x, rank.y );
+	sprintf( filename, "field-zeta-instance-%03d-step-%06d-rank-%03d-%03d.txt",
+			instance, step, rank.x, rank.y );
 	std::ofstream os3( filename );
 
 	griddimension = zeta.size();

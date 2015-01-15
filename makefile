@@ -1,5 +1,6 @@
 
-CXX := mpic++ #g++
+CXX := g++
+#CXX := mpic++
 SRC := $(wildcard *.cpp)
 OBJ := $(SRC:%.cpp=%.o)
 CXXDEPENDFILE := .depend
@@ -29,7 +30,8 @@ endif
 # Ofast ist ähnlich zu -fno-signed-zeros -freciprocal-math -fno-trapping-math -fassociative-math 
 # -fopenmp: enable #pragma omp parallel for
 #CXXFLAGS := -Wall -D_DEBUG -g -std=c++11 -D_CPP11 #-pedantic
-CXXFLAGS := -DCOMM_MPI -Wall -march=native -O3 -flto -fuse-linker-plugin -DNDEBUG -std=c++11 -fno-signed-zeros -freciprocal-math -fno-trapping-math -fassociative-math #-flto -fuse-linker-plugin -fopenmp
+CXXFLAGS := -Wall -march=native -O3 -flto -fuse-linker-plugin -DNDEBUG -std=c++11 -fno-signed-zeros -freciprocal-math -fno-trapping-math -fassociative-math #-flto -fuse-linker-plugin -fopenmp
+#CXXFLAGS := -DCOMM_MPI -Wall -march=native -O3 -flto -fuse-linker-plugin -DNDEBUG -std=c++11 -fno-signed-zeros -freciprocal-math -fno-trapping-math -fassociative-math #-flto -fuse-linker-plugin -fopenmp
 LIBS := -pthread
 INCLUDE := -I.
 

@@ -162,7 +162,7 @@ void simulate( Params params, int instance )
 			Computation::computeVorticity( zeta, u, v, h );
 
 			IO::writeRawOutput( u, v, p, psi, zeta,
-					h, localGridOffset, step, commRank );
+					h, localGridOffset, instance, step, commRank );
 			/*
 			IO::writeVTKFile( params.gridSize, u, v,
 					p, h, params, instance, step );

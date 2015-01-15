@@ -51,7 +51,7 @@ public:
   static void writeRawOutput( const GridFunction& u, const GridFunction& v,
 		  const GridFunction& p, const GridFunction& psi,
 		  const GridFunction& zeta, const Point& delta, const Point& offset,
-		  index_t step, const MultiIndex& rank );
+		  index_t instance, index_t step, const MultiIndex& rank );
 
 
   //! Method interpolates the velocity for u in the staggered grid.
