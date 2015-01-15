@@ -29,22 +29,25 @@ endif
 # Ofast ist ähnlich zu -fno-signed-zeros -freciprocal-math -fno-trapping-math -fassociative-math 
 # -fopenmp: enable #pragma omp parallel for
 #CXXFLAGS := -Wall -D_DEBUG -g -std=c++11 -D_CPP11 #-pedantic
-CXXFLAGS := -Wall -march=native -O3 -flto -fuse-linker-plugin -DNDEBUG -std=c++11 -D_CPP11 -fno-signed-zeros -freciprocal-math -fno-trapping-math -fassociative-math #-flto -fuse-linker-plugin -fopenmp
+CXXFLAGS := -DCOMM_MPI -Wall -march=native -O3 -flto -fuse-linker-plugin -DNDEBUG -std=c++11 -fno-signed-zeros -freciprocal-math -fno-trapping-math -fassociative-math #-flto -fuse-linker-plugin -fopenmp
 LIBS := -pthread
+INCLUDE := -I.
 
 $(TARGET): $(CXXDEPENDFILE) $(OBJ)
 	$(CXX) $(CXXFLAGS) $(OBJ) $(LIBS) -o $(TARGET)
 
 $(OBJ): %.o : %.cpp
-	$(CXX) $(CXXFLAGS) -o $@ -c $<
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -o $@ -c $<
 
 $(CXXDEPENDFILE): $(SRC) $(SRCPROTO)
-	$(CXX) $(CXXFLAGS) -MM $(SRC) > $(CXXDEPENDFILE)
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -MM $(SRC) > $(CXXDEPENDFILE)
 
+ifneq ($(MAKECMDGOALS),clean)
 -include $(CXXDEPENDFILE)
+endif
 
 run: $(TARGET)
-	mpirun -n 4 ./$(TARGET)
+	./$(TARGET)
 
 debug: $(TARGET)
 	gdb $(TARGET)

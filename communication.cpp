@@ -4,8 +4,10 @@
 
 using namespace mm;
 
+#ifdef COMM_MPI
 const MPI_Datatype Communication::REAL_MPI = ( sizeof(real) == sizeof(double) ? MPI_DOUBLE : MPI_FLOAT );
 const MPI_Comm     Communication::comm = MPI_COMM_WORLD;
+#endif
 
 MultiIndex         Communication::s_Size;
 MultiIndex         Communication::s_Rank;
@@ -20,6 +22,7 @@ bool               Communication::s_SendRecvOrder;
 
 void Communication::init( int& argc, char**& argv )
 {
+#ifdef COMM_MPI
 	MPI_Init( &argc, &argv );
 
 	MPI_Comm_size( comm, &s_iSize );
@@ -35,11 +38,26 @@ void Communication::init( int& argc, char**& argv )
 	s_iRankTop = rankTo1D( s_Rank + MultiIndex( 0, 1 ) );
 	s_iRankBottom = rankTo1D( s_Rank - MultiIndex( 0, 1 ) );
 	s_SendRecvOrder = ( ( ( s_Rank.x + s_Rank.y ) % 2 ) == 0 );
+#else
+	s_iSize = 1;
+	s_iRank = 0;
+
+	s_Size = MultiIndex::ONE;
+	s_Rank = MultiIndex::ZERO;
+
+	s_iRankLeft = 0;
+	s_iRankRight = 0;
+	s_iRankTop = 0;
+	s_iRankBottom = 0;
+	s_SendRecvOrder = true;
+#endif
 }
 
 void Communication::finalize()
 {
+#ifdef COMM_MPI
 	MPI_Finalize();
+#endif
 }
 
 const MultiIndex& Communication::size()
@@ -59,17 +77,139 @@ int Communication::linearRank()
 
 real Communication::min( const real& local )
 {
+#ifdef COMM_MPI
 	real res;
 	MPI_Allreduce( &local, &res, 1, REAL_MPI, MPI_MIN, comm );
 	return res;
+#else
+	return local;
+#endif
 }
 
 real Communication::sum( const real& local )
 {
+#ifdef COMM_MPI
 	real res;
 	MPI_Allreduce( &local, &res, 1, REAL_MPI, MPI_SUM, comm );
 	return res;
+#else
+	return local;
+#endif
 }
+
+// alternate between send and receive in successive processes
+// e.g. Proc1 sends to Proc2 while Proc2 receives from Proc1
+#define ALTERNATE_SEND_RECV(arg,sendCode,recvCode) if( arg ) {\
+	sendCode;\
+	recvCode;\
+} else {\
+	recvCode;\
+	sendCode;\
+}
+
+void Communication::exchangeFunctionBoundary( GridFunction& f,
+		const MultiIndex& readOffset )
+{
+#ifdef COMM_MPI
+	MPI_Status stat;
+
+	// itermediate linear buffer for vertical boundaries
+	GridFunction transposedBoundary( MultiIndex( f.size().y - 2, 1 ) );
+
+	ALTERNATE_SEND_RECV( s_SendRecvOrder,
+			sendLeft( f, readOffset.x, transposedBoundary, true ),
+			recvRight( f, stat, transposedBoundary, true ) );
+
+	ALTERNATE_SEND_RECV( s_SendRecvOrder,
+			sendRight( f, readOffset.x, transposedBoundary, true ),
+			recvLeft( f, stat, transposedBoundary, true ) );
+
+	ALTERNATE_SEND_RECV( s_SendRecvOrder,
+			sendTop( f, readOffset.y, true ),
+			recvBottom( f, stat, true ) );
+
+	ALTERNATE_SEND_RECV( s_SendRecvOrder,
+			sendBottom( f, readOffset.y, true ),
+			recvTop( f, stat, true ) );
+#endif
+}
+
+#undef ALTERNATE_SEND_RECV
+
+void Communication::sendBoundary( GridFunction& f, Boundary boundary,
+		int readOffset, bool excludeCorners )
+{
+#ifdef COMM_MPI
+	switch( boundary )
+	{
+		case BOUNDARY_LEFT:
+		{
+			GridFunction transposedBoundary(
+					MultiIndex( f.size().y - 2 * excludeCorners, 1 ) );
+			sendLeft( f, readOffset, transposedBoundary, excludeCorners );
+			break;
+		}
+		case BOUNDARY_TOP:
+		{
+			sendTop( f, readOffset, excludeCorners );
+			break;
+		}
+		case BOUNDARY_RIGHT:
+		{
+			GridFunction transposedBoundary(
+					MultiIndex( f.size().y - 2 * excludeCorners, 1 ) );
+			sendRight( f, readOffset, transposedBoundary, excludeCorners );
+			break;
+		}
+		case BOUNDARY_BOTTOM:
+		{
+			sendBottom( f, readOffset, excludeCorners );
+			break;
+		}
+		default:
+			break;
+	}
+#endif
+}
+
+void Communication::receiveBoundary(
+		GridFunction& f, Boundary boundary, bool excludeCorners )
+{
+#ifdef COMM_MPI
+	MPI_Status stat;
+	switch( boundary )
+	{
+		case BOUNDARY_LEFT:
+		{
+			GridFunction transposedBoundary(
+					MultiIndex( f.size().y - 2 * excludeCorners, 1 ) );
+			recvLeft( f, stat, transposedBoundary, excludeCorners );
+			break;
+		}
+		case BOUNDARY_TOP:
+		{
+			recvTop( f, stat, excludeCorners );
+			break;
+		}
+		case BOUNDARY_RIGHT:
+		{
+			GridFunction transposedBoundary(
+					MultiIndex( f.size().y - 2 * excludeCorners, 1 ) );
+			recvRight( f, stat, transposedBoundary, excludeCorners );
+			break;
+		}
+		case BOUNDARY_BOTTOM:
+		{
+			recvBottom( f, stat, excludeCorners );
+			break;
+		}
+		default:
+			break;
+	}
+#endif
+}
+
+#ifdef COMM_MPI
 
 MultiIndex Communication::sizeTo2D( int size )
 {
@@ -106,112 +246,6 @@ int Communication::rankTo1D( const MultiIndex& rank, bool cyclic )
 	else
 	{
 		return ( rank2D.y * s_Size.x + rank2D.x );
-	}
-}
-
-// alternate between send and receive in successive processes
-// e.g. Proc1 sends to Proc2 while Proc2 receives from Proc1
-#define ALTERNATE_SEND_RECV(arg,sendCode,recvCode) if( arg ) {\
-	sendCode;\
-	recvCode;\
-} else {\
-	recvCode;\
-	sendCode;\
-}
-
-void Communication::exchangeFunctionBoundary( GridFunction& f,
-		const MultiIndex& readOffset )
-{
-	MPI_Status stat;
-
-	// itermediate linear buffer for vertical boundaries
-	GridFunction transposedBoundary( MultiIndex( f.size().y - 2, 1 ) );
-
-	ALTERNATE_SEND_RECV( s_SendRecvOrder,
-			sendLeft( f, readOffset.x, transposedBoundary, true ),
-			recvRight( f, stat, transposedBoundary, true ) );
-
-	ALTERNATE_SEND_RECV( s_SendRecvOrder,
-			sendRight( f, readOffset.x, transposedBoundary, true ),
-			recvLeft( f, stat, transposedBoundary, true ) );
-
-	ALTERNATE_SEND_RECV( s_SendRecvOrder,
-			sendTop( f, readOffset.y, true ),
-			recvBottom( f, stat, true ) );
-
-	ALTERNATE_SEND_RECV( s_SendRecvOrder,
-			sendBottom( f, readOffset.y, true ),
-			recvTop( f, stat, true ) );
-}
-
-#undef ALTERNATE_SEND_RECV
-
-void Communication::sendBoundary( GridFunction& f, Boundary boundary,
-		int readOffset, bool excludeCorners )
-{
-	switch( boundary )
-	{
-		case BOUNDARY_LEFT:
-		{
-			GridFunction transposedBoundary(
-					MultiIndex( f.size().y - 2 * excludeCorners, 1 ) );
-			sendLeft( f, readOffset, transposedBoundary, excludeCorners );
-			break;
-		}
-		case BOUNDARY_TOP:
-		{
-			sendTop( f, readOffset, excludeCorners );
-			break;
-		}
-		case BOUNDARY_RIGHT:
-		{
-			GridFunction transposedBoundary(
-					MultiIndex( f.size().y - 2 * excludeCorners, 1 ) );
-			sendRight( f, readOffset, transposedBoundary, excludeCorners );
-			break;
-		}
-		case BOUNDARY_BOTTOM:
-		{
-			sendBottom( f, readOffset, excludeCorners );
-			break;
-		}
-		default:
-			break;
-	}
-}
-
-void Communication::receiveBoundary(
-		GridFunction& f, Boundary boundary, bool excludeCorners )
-{
-	MPI_Status stat;
-	switch( boundary )
-	{
-		case BOUNDARY_LEFT:
-		{
-			GridFunction transposedBoundary(
-					MultiIndex( f.size().y - 2 * excludeCorners, 1 ) );
-			recvLeft( f, stat, transposedBoundary, excludeCorners );
-			break;
-		}
-		case BOUNDARY_TOP:
-		{
-			recvTop( f, stat, excludeCorners );
-			break;
-		}
-		case BOUNDARY_RIGHT:
-		{
-			GridFunction transposedBoundary(
-					MultiIndex( f.size().y - 2 * excludeCorners, 1 ) );
-			recvRight( f, stat, transposedBoundary, excludeCorners );
-			break;
-		}
-		case BOUNDARY_BOTTOM:
-		{
-			recvBottom( f, stat, excludeCorners );
-			break;
-		}
-		default:
-			break;
 	}
 }
 
@@ -346,3 +380,5 @@ void Communication::recvBottom(
 			&stat );
 	}
 }
+
+#endif

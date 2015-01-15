@@ -6,65 +6,6 @@
 
 using std::size_t;
 
-Params
-IO::readInputFile (const char *filename)
-{
-  Params p;
-
-  std::ifstream stream( filename );
-
-  std::string line;
-  while( std::getline( stream, line ) )
-  {
-	  size_t beginName = line.find_first_not_of( " \t", 0 );
-	  if( beginName >= std::string::npos )
-	  {
-		  continue;
-	  }
-	  size_t endName = line.find_first_of( " \t=", beginName );
-	  if( endName >= std::string::npos )
-	  {
-		  continue;
-	  }
-	  size_t beginValue = line.find_first_not_of( " \t=", endName );
-	  if( beginValue >= std::string::npos )
-	  {
-		  continue;
-	  }
-	  size_t endValue = line.find_first_of( " \t\n\0", beginValue );
-
-	  std::string name = line.substr( beginName, endName - beginName );
-	  std::string value = line.substr( beginValue, endValue - beginValue );
-
-#define SET_PARAM_DOUBLE(_member, _name) if( name == _name ) {\
-	  p._member = strtod( value.c_str(), NULL ); }
-#define SET_PARAM_INT(_member, _name) if( name == _name ) {\
-	  p._member = strtol( value.c_str(), NULL, 10 ); }
-
-	  SET_PARAM_DOUBLE(domainSize.x, "xLength")
-	  else SET_PARAM_DOUBLE(domainSize.y, "yLength")
-	  else SET_PARAM_INT(gridSize.x, "iMax")
-	  else SET_PARAM_INT(gridSize.y, "jMax")
-	  else SET_PARAM_DOUBLE(T, "tEnd")
-	  else SET_PARAM_DOUBLE(dt, "deltaT")
-	  else SET_PARAM_DOUBLE(tau, "tau")
-	  else SET_PARAM_DOUBLE(deltaVec, "deltaVec")
-	  else SET_PARAM_INT(maxIter, "iterMax")
-	  else SET_PARAM_DOUBLE(eps, "eps")
-	  else SET_PARAM_DOUBLE(omega, "omg")
-	  else SET_PARAM_DOUBLE(alpha, "alpha")
-	  else SET_PARAM_DOUBLE(Re, "re")
-	  else SET_PARAM_DOUBLE(initialVelocity.x, "ui")
-	  else SET_PARAM_DOUBLE(initialVelocity.y, "vi")
-	  else SET_PARAM_DOUBLE(initialPressure, "pi")
-
-#undef SET_PARAM_DOUBLE
-#undef SET_PARAM_INT
-  }
-
-  return p;
-}
-
 
 #define Element(field,ic) ((field)((ic)[0],(ic)[1]))
 
@@ -213,7 +154,7 @@ IO::writeVTKFile (const MultiIndex & griddimension, const GridFunction & u,
      << "<Points>" << std::endl
      //inputfile as comment:
      << "<!-- " ;
-  params.print(os);
+  os << params;
   os << "--> " << std::endl;
   os << "<DataArray type=\"Float64\" format=\"ascii\" NumberOfComponents=\"3\"> "
      << std::endl;

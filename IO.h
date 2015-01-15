@@ -53,13 +53,6 @@ public:
 		  const GridFunction& zeta, const Point& delta, const Point& offset,
 		  index_t step, const MultiIndex& rank );
 
-  /*!
-   * Methods reads the simulation parameters from the specified input file.
-   * 
-   * @param filename The name of the file with the simulations paremters
-   */
-  static Params readInputFile (const char *filename);
-
 
   //! Method interpolates the velocity for u in the staggered grid.
   /*!

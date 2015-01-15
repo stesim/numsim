@@ -2,10 +2,11 @@
 #define PARAMS_H
 
 #include "typedef.h"
-#include <iostream>
+#include <ostream>
 
 struct Params
 {
+public:
 	Point      domainSize;
 	MultiIndex gridSize;
 	real       T;
@@ -19,24 +20,22 @@ struct Params
 	real       Re;
 	Point      initialVelocity;
 	real       initialPressure;
-  
-  void print( std::ostream& s ) const // man hätte auch den operator<< für Params überladen können...
-  {
-    s
-      << "  Domain size:           "            << domainSize.x       << " x " << domainSize.y << std::endl
-      << "  Grid size:             "            << gridSize.x         << " x " << gridSize.y   << std::endl
-      << "  T:                     "            << T                  <<                          std::endl
-      << "  Re:                    "            << Re                 <<                          std::endl
-      << "  dt:                    "            << dt                 <<                          std::endl
-      << "  tau:                   "            << tau                <<                          std::endl
-      << "  Output time step:      "            << deltaVec           <<                          std::endl
-      << "  Max SOR iterations:    "            << maxIter            <<                          std::endl
-      << "  SOR error tolerance:   "            << eps                <<                          std::endl
-      << "  Relaxation factor:     "            << omega              <<                          std::endl
-      << "  Upwinding factor:      "            << alpha              <<                          std::endl
-      << "  Initial velocity:      ("           << initialVelocity.x  << "," << initialVelocity.y << ")" << std::endl
-      << "  Initial pressure:      "            << initialPressure    << std::endl;
-  }
+
+	/*!
+	* Method reads the simulation parameters from the specified input file.
+	* 
+	* @param filename The name of the file with the simulations parameters
+	*/
+	void parseFile( const char *filename );
+
+	int parseCmdArgs( int argc, char* argv[] );
+
+private:
+	void str2double( const char* str, double& out );
+
+	void str2int( const char* str, int& out );
 };
+
+std::ostream& operator <<( std::ostream& s, const Params& p );
 
 #endif

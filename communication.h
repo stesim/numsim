@@ -2,7 +2,10 @@
 #define COMMUNICATION_H
 
 #include "typedef.h"
+
+#ifdef COMM_MPI
 #include "mpi.h"
+#endif
 
 class Communication
 {
@@ -60,6 +63,7 @@ public:
 	static real sum( const real& local );
 
 private:
+#ifdef COMM_MPI
 	//! Determine 2D grid dimensions from number of processes
 	static MultiIndex sizeTo2D( int size );
 
@@ -83,10 +87,13 @@ private:
 			GridFunction& transposedBoundary, bool excludeCorners );
 	static inline void recvBottom(
 			GridFunction& f, MPI_Status& stat, bool excludeCorners );
+#endif
 
 private:
+#ifdef COMM_MPI
 	static const MPI_Datatype REAL_MPI;
 	static const MPI_Comm comm;
+#endif
 
 	static MultiIndex s_Size;
 	static MultiIndex s_Rank;

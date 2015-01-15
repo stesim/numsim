@@ -34,11 +34,11 @@ void Computation::computeNewVelocities( GridFunction& u,
 {
 	// ------------------------- compute u -------------------------
 	set( u, MultiIndex::ONE, u.size() - MultiIndex::ONE,
-			f - dt % utils::diffX_Bw( p, h.x ) );
+			f - dt * utils::diffX_Bw( p, h.x ) );
 
 	// ------------------------- compute v -------------------------
 	set( v, MultiIndex::ONE, v.size() - MultiIndex::ONE,
-			g - dt % utils::diffY_Bw( p, h.y ) );
+			g - dt * utils::diffY_Bw( p, h.y ) );
 }
 
 void Computation::computeMomentumEquations( GridFunction& f,
@@ -52,30 +52,30 @@ void Computation::computeMomentumEquations( GridFunction& f,
 {
 	// ========================= compute f =========================
 	// --------------------- compute d(u^2)/dx ---------------------
-	auto u2x = utils::diffX_Bw( sqr( 0.5 % ( u + eval<+1,0>( u ) ) ), h.x )
-		+ alpha % utils::diffX_Bw( ( 0.5 % abs( u + eval<+1,0>( u ) ) ) * ( 0.5 % ( u - eval<+1,0>( u ) ) ), h.x );
+	auto u2x = utils::diffX_Bw( sqr( 0.5 * ( u + eval<+1,0>( u ) ) ), h.x )
+		+ alpha * utils::diffX_Bw( ( 0.5 * abs( u + eval<+1,0>( u ) ) ) * ( 0.5 * ( u - eval<+1,0>( u ) ) ), h.x );
 
 	// --------------------- compute d(u*v)/dy ---------------------
-	auto uvy = utils::diffY_Bw( ( 0.5 % ( eval<-1,+1>( v ) + eval<0,+1>( v ) ) ) * ( 0.5 % ( u + eval<0,+1>( u ) ) ), h.y )
-		 + alpha % utils::diffY_Bw( ( 0.5 % abs( eval<-1,+1>( v ) + eval<0,+1>( v ) ) ) * ( 0.5 % ( u - eval<0,+1>( u ) ) ), h.y );
+	auto uvy = utils::diffY_Bw( ( 0.5 * ( eval<-1,+1>( v ) + eval<0,+1>( v ) ) ) * ( 0.5 * ( u + eval<0,+1>( u ) ) ), h.y )
+		 + alpha * utils::diffY_Bw( ( 0.5 * abs( eval<-1,+1>( v ) + eval<0,+1>( v ) ) ) * ( 0.5 * ( u - eval<0,+1>( u ) ) ), h.y );
 
 	// ---------------------- compute final f ----------------------
 	set( f, MultiIndex::ONE, f.size() - MultiIndex::ONE,
-			u + dt % ( 1.0 / Re % utils::diffXX_YY( u, h )
+			u + dt * ( 1.0 / Re * utils::diffXX_YY( u, h )
 				- u2x - uvy ) );
 
 	// ========================= compute g =========================
 	// --------------------- compute d(v^2)/dy ---------------------
-	auto v2y = utils::diffY_Bw( sqr( 0.5 % ( v + eval<0,+1>( v ) ) ), h.y )
-		+ alpha % utils::diffY_Bw( ( 0.5 % abs( v + eval<0,+1>( v ) ) ) * ( 0.5 % ( v - eval<0,+1>( v ) ) ), h.y );
+	auto v2y = utils::diffY_Bw( sqr( 0.5 * ( v + eval<0,+1>( v ) ) ), h.y )
+		+ alpha * utils::diffY_Bw( ( 0.5 * abs( v + eval<0,+1>( v ) ) ) * ( 0.5 * ( v - eval<0,+1>( v ) ) ), h.y );
 
 	// --------------------- compute d(u*v)/dx ---------------------
-	auto uvx = utils::diffX_Bw( ( 0.5 % ( eval<+1,-1>( u ) + eval<+1,0>( u ) ) ) * ( 0.5 % ( v + eval<+1,0>( v ) ) ), h.x )
-		 + alpha % utils::diffX_Bw( ( 0.5 % abs( eval<+1,-1>( u ) + eval<+1,0>( u ) ) ) * ( 0.5 % ( v - eval<+1,0>( v ) ) ), h.x );
+	auto uvx = utils::diffX_Bw( ( 0.5 * ( eval<+1,-1>( u ) + eval<+1,0>( u ) ) ) * ( 0.5 * ( v + eval<+1,0>( v ) ) ), h.x )
+		 + alpha * utils::diffX_Bw( ( 0.5 * abs( eval<+1,-1>( u ) + eval<+1,0>( u ) ) ) * ( 0.5 * ( v - eval<+1,0>( v ) ) ), h.x );
 
 	// ---------------------- compute final g ----------------------
 	set( g, MultiIndex::ONE, g.size() - MultiIndex::ONE,
-			v + dt % ( 1.0 / Re % utils::diffXX_YY( v, h )
+			v + dt * ( 1.0 / Re * utils::diffXX_YY( v, h )
 				- v2y - uvx ) );
 }
 
@@ -89,7 +89,7 @@ void Computation::computeRightHandSide( GridFunction& rhs,
 	// eine *zentrale* Differenz, da wir entsprechend staggered sind beim Druck
 
 	// rhs = 1/dt * (df/dx + dg/dy)
-	rhs = 1.0 / dt % ( utils::diffX_Fw( eval<+1,+1>( f ), h.x )
+	rhs = 1.0 / dt * ( utils::diffX_Fw( eval<+1,+1>( f ), h.x )
 			+ utils::diffY_Fw( eval<+1,+1>( g ), h.y ) );
 }
 
@@ -103,7 +103,7 @@ void Computation::computeVelocityPotential( GridFunction& psi,
 
 	// "HACK": use psi as source and image function to accumulate values
 	set( psi, MultiIndex( 1, 0 ), psi.size(),
-			eval<-1,0>( psi ) - h.x % eval<0,+1>( v ) );
+			eval<-1,0>( psi ) - h.x * eval<0,+1>( v ) );
 }
 
 void Computation::computeVorticity( GridFunction& zeta,

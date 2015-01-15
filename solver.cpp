@@ -39,8 +39,8 @@ void Solver::SORCycle( GridFunction& p,
 	// "HACK": use p as source _and_ image function
 	// -> both old and new values are used in the calculations (Gauss-Seidel)
 	set( p, MultiIndex::ONE, p.size() - MultiIndex::ONE,
-			( 1.0 - omega ) % p + 0.5 * omega * dx2 * dy2 / ( dx2 + dy2 ) % (
-				1 / dx2 % ( eval<-1,0>( p ) + eval<+1,0>( p ) ) +  1 / dy2 % ( eval<0,-1>( p ) + eval<0,+1>( p ) )
+			( 1.0 - omega ) * p + 0.5 * omega * dx2 * dy2 / ( dx2 + dy2 ) * (
+				1 / dx2 * ( eval<-1,0>( p ) + eval<+1,0>( p ) ) +  1 / dy2 * ( eval<0,-1>( p ) + eval<0,+1>( p ) )
 				- eval<-1,-1>( rhs ) ) );
 }
 
@@ -57,7 +57,7 @@ void Solver::SORSubcycle( GridFunction& p,
 	real dy2 = h.y * h.y;
 
 	utils::setCheckered( p, MultiIndex::ONE, p.size() - MultiIndex::ONE, color,
-			( 1.0 - omega ) % p + 0.5 * omega * dx2 * dy2 / ( dx2 + dy2 ) % (
-				1 / dx2 % ( eval<-1,0>( p ) + eval<+1,0>( p ) ) +  1 / dy2 % ( eval<0,-1>( p ) + eval<0,+1>( p ) )
+			( 1.0 - omega ) * p + 0.5 * omega * dx2 * dy2 / ( dx2 + dy2 ) * (
+				1 / dx2 * ( eval<-1,0>( p ) + eval<+1,0>( p ) ) +  1 / dy2 * ( eval<0,-1>( p ) + eval<0,+1>( p ) )
 				- eval<-1,-1>( rhs ) ) );
 }

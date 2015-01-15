@@ -8,29 +8,28 @@
 #include "metamath/metamath.h"
 #include <cmath>
 #include <cassert>
-
-#ifdef _CPP11
 #include <thread>
 #include <chrono>
+
 inline std::chrono::high_resolution_clock::time_point getTime()
 {
 	return std::chrono::high_resolution_clock::now();
 }
-#define tick() std::chrono::high_resolution_clock::time_point _timeStart = getTime()
-#define tock() ( std::chrono::duration_cast<std::chrono::duration<real>>( getTime() - _timeStart ) ).count()
-#else
-#define tick()
-#define tock() 0
-#endif
+
+inline double getElapsedTime( std::chrono::high_resolution_clock::time_point t )
+{
+	return ( std::chrono::duration_cast<std::chrono::duration<real>>(
+				getTime() - t ) ).count();
+}
 
 #define DO_ON_RANK(rnk,todo) if( Communication::linearRank() == rnk ) { todo }
 //#define DO_ON_RANK(rnk,todo) todo
 
-#define PRINT_ON_RANK 1
+#define PRINT_ON_RANK 0
 
 using namespace mm;
 
-void simulate( const char* filename, int instance )
+void simulate( Params params, int instance )
 {
 	MultiIndex commSize = Communication::size();
 	MultiIndex commRank = Communication::rank();
@@ -40,21 +39,9 @@ void simulate( const char* filename, int instance )
 	bool bottomBoundary = ( commRank.y == 0 );
 	bool topBoundary = ( commRank.y == commSize.y - 1 );
 
-	const char* paramFile = "inputvals";
-	if( filename != NULL )
-	{
-		paramFile = filename;
-	}
-
-	DO_ON_RANK( PRINT_ON_RANK,
-		std::cout << "[Initialization] Loading parameters from file '" << paramFile << "'." << std::endl;
-	);
-
-	Params params = IO::readInputFile( paramFile );
-
 	DO_ON_RANK( PRINT_ON_RANK,
 		std::cout << "[Initialization] Parameter overview:" << std::endl;
-		params.print( std::cout );
+		std::cout << params;
 	);
 
 	MultiIndex localGridSize = params.gridSize;
@@ -101,7 +88,7 @@ void simulate( const char* filename, int instance )
 	f = constant( params.initialVelocity.x );
 	g = constant( params.initialVelocity.y );
 
-	tick();
+	auto startTime = getTime();
 
 	Computation::setVelocityBoundary( u, v,
 			leftBoundary, topBoundary, rightBoundary, bottomBoundary );
@@ -111,7 +98,7 @@ void simulate( const char* filename, int instance )
 	real tOut = 0.0;
 	while( t < params.T )
 	{
-		real timeBeginStep = tock();
+		real timeBeginStep = getElapsedTime( startTime );
 
 		real dt = Computation::computeTimeStep(
 				u, v, h, params.Re, params.tau );
@@ -126,7 +113,7 @@ void simulate( const char* filename, int instance )
 
 		Computation::computeRightHandSide( rhs, f, g, h, dt );
 
-		real timeBeginSOR = tock();
+		real timeBeginSOR = getElapsedTime( startTime );
 
 		index_t iter = 0;
 		real res = params.eps + 1.0;
@@ -145,7 +132,7 @@ void simulate( const char* filename, int instance )
 			++iter;
 		}
 
-		real timeEndSOR = tock();
+		real timeEndSOR = getElapsedTime( startTime );
 
 		// compute new velocities
 		Computation::computeNewVelocities( u, v, f, g, p, h, dt );
@@ -155,7 +142,7 @@ void simulate( const char* filename, int instance )
 		Computation::setVelocityBoundary( u, v,
 				leftBoundary, topBoundary, rightBoundary, bottomBoundary );
 
-		real timeEndStep = tock();
+		real timeEndStep = getElapsedTime( startTime );
 
 		t += dt;
 		++step;
@@ -187,51 +174,78 @@ void simulate( const char* filename, int instance )
 					<< "  dt:           " << dt                                 << std::endl
 					<< "  iter:         " << iter                               << std::endl
 					<< "  res:          " << res                                << std::endl
-					<< "  SOR time:     " << timeEndSOR - timeBeginSOR << 's'   << std::endl
+					<< "  SOR time:     " << timeEndSOR - timeBeginSOR   << 's' << std::endl
 					<< "  Step time:    " << timeEndStep - timeBeginStep << 's' << std::endl
-					<< "  Elapsed time: " << tock() << 's'                      << std::endl;
+					<< "  Elapsed time: " << getElapsedTime( startTime ) << 's' << std::endl;
 			);
 		}
 	}
 
 	DO_ON_RANK( PRINT_ON_RANK,
-		std::cout << "[Profiling]: Total execution time: " << tock() << 's' << std::endl;
+		std::cout << "[Profiling]: Total execution time: " << getElapsedTime( startTime ) << 's' << std::endl;
 	);
+}
+
+Params defaultParams()
+{
+	Params p;
+	p.domainSize = Point( 1.0, 1.0 );
+	p.gridSize = MultiIndex( 128, 128 );
+	p.T = 16.5;
+	p.dt = 0;
+	p.tau = 0.5;
+	p.deltaVec = 1.4;
+	p.maxIter = 100;
+	p.eps = 0.001;
+	p.omega = 1.7;
+	p.alpha = 0.9;
+	p.Re = 1000;
+	p.initialVelocity = Point( 0.0, 0.0 );
+	p.initialPressure = 0;
+
+	return p;
 }
 
 int main( int argc, char* argv[] )
 {
-	assert( argc <= 2 );
-	
 	Communication::init( argc, argv );
 
-	if( argc > 2 )
+	std::vector<Params> params;
+
+	--argc;
+	++argv;
+
+	do
 	{
-#ifdef _CPP11
-		std::vector<std::thread> threads( argc - 1 );
-		for( int i = 1; i < argc; ++i )
-		{
-			threads[ i - 1 ] = std::thread( simulate, argv[ i ], i - 1 );
-		}
-		for( int i = 1; i < argc; ++i )
-		{
-			threads[ i - 1 ].join();
-		}
-#else
-		for( int i = 1; i < argc; ++i )
-		{
-			simulate( argv[ i ], i - 1 );
-		}
-#endif
-	}
-	else if( argc == 2 )
+		Params p = defaultParams();
+		int endIdx = p.parseCmdArgs( argc, argv );
+
+		params.push_back( p );
+
+		argc -= endIdx;
+		argv += endIdx;
+	} while( argc > 0 );
+
+#ifndef COMM_MPI
+	if( params.size() > 1 )
 	{
-		simulate( argv[ 1 ], 0 );
+		std::vector<std::thread> threads( params.size() );
+		for( std::size_t i = 0; i < params.size(); ++i )
+		{
+			threads[ i ] = std::thread( simulate, params[ i ], i );
+		}
+		for( std::size_t i = 0; i < params.size(); ++i )
+		{
+			threads[ i ].join();
+		}
 	}
 	else
 	{
-		simulate( NULL, 0 );
+		simulate( params[ 0 ], 0 );
 	}
+#else
+	simulate( params[ 0 ], 0 );
+#endif
 
 	Communication::finalize();
 
