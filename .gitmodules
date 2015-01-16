@@ -1,0 +1,3 @@
+[submodule "metamath"]
+	path = metamath
+	url = git://github.com/stesim/metamath.git
