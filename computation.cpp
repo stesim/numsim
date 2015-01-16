@@ -3,6 +3,9 @@
 #include "metamath/metamath.h"
 #include "metamath/mmutils.h"
 #include "communication.h"
+#include <cmath>
+
+#include <iostream>
 
 using namespace mm;
 
@@ -12,11 +15,13 @@ real Computation::computeTimeStep( const GridFunction& u,
 		real Re,
 		real tau )
 {
+	static const real EPS = 1.0 / ( 1 << 20 );
+
 	real hx2 = h.x * h.x;
 	real hy2 = h.y * h.y;
 
-	real uMax = max( abs( u ), MultiIndex::ZERO, u.size() );
-	real vMax = max( abs( v ), MultiIndex::ZERO, v.size() );
+	real uMax = std::max( max( abs( u ), MultiIndex::ZERO, u.size() ), EPS );
+	real vMax = std::max( max( abs( v ), MultiIndex::ZERO, v.size() ), EPS );
 
 	real dt_local = tau * std::min( Re / 2.0 * hx2 * hy2 / ( hx2 + hy2 ),
 			std::min( h.x / uMax, h.y / vMax ) );

@@ -96,6 +96,8 @@ void simulate( Params params, int instance )
 	real t = 0.0;
 	index_t step = 0;
 	real tOut = 0.0;
+	index_t iterResidual = params.maxIter;
+	static const index_t resIterFrac = 8;
 	while( t < params.T )
 	{
 		real timeBeginStep = getElapsedTime( startTime );
@@ -117,7 +119,8 @@ void simulate( Params params, int instance )
 
 		index_t iter = 0;
 		real res = params.eps + 1.0;
-		while( iter < params.maxIter && res > params.eps )
+		index_t iterResidualNext = iterResidual / resIterFrac;
+		while( iter < params.maxIter )
 		{
 			Computation::setPressureBoundary( p,
 					leftBoundary, topBoundary, rightBoundary, bottomBoundary );
@@ -127,7 +130,20 @@ void simulate( Params params, int instance )
 			Solver::SORSubcycle( p, rhs, h, params.omega, false );
 			Communication::exchangeFunctionBoundary( p, MultiIndex::ONE );
 
-			res = Solver::computeResidual( p, rhs, params.gridSize, h );
+			if( iter == iterResidualNext || iter == params.maxIter - 1 )
+			{
+				res = Solver::computeResidual( p, rhs, params.gridSize, h );
+				if( res > params.eps )
+				{
+					iterResidualNext +=
+						std::max( iterResidual / resIterFrac, 1 );
+				}
+				else
+				{
+					iterResidual = iter;
+					break;
+				}
+			}
 
 			++iter;
 		}
