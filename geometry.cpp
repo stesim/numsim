@@ -26,337 +26,6 @@ Geometry::Geometry( const Point& domainSize, const MultiIndex& gridSize )
 	set( m_MaskP, MultiIndex::ONE, m_MaskP.size() - MultiIndex::ONE, constant( true ) );
 }
 
-void Geometry::generateSampleGeometry()
-{
-	MultiIndex gridSize = m_GridSize;
-
-	MultiIndex squarePos = MultiIndex::ZERO;//MultiIndex( gridSize.x * 3 / 4, gridSize.y / 4 );
-	MultiIndex squareSize = MultiIndex( gridSize.x / 2, gridSize.y / 2 );
-
-	m_SettersU = std::vector<BoundarySetter>(
-			2 *  ( gridSize.x + 3 ) + 2 * gridSize.y
-			+ 2 * ( squareSize.x - 1 + squareSize.y ) );
-	m_SettersV = std::vector<BoundarySetter>(
-			2 *  ( gridSize.y + 3 ) + 2 * gridSize.x
-			+ 2 * ( squareSize.x + squareSize.y - 1 ) );
-	m_SettersP = std::vector<BoundarySetter>(
-			2 * gridSize.x + 2 * gridSize.y
-			+ 2 * ( squareSize.x + squareSize.y ) );
-
-	BoundarySetter setter;
-
-	// u boundaries
-	for( index_t i = 1; i <= gridSize.y; ++i )
-	{
-		// left
-		setter.index = MultiIndex( 1, i );
-		setter.sourceIndex = MultiIndex( -1, -1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 0.0;
-
-		m_SettersU.push_back( setter );
-
-		// right
-		setter.index = MultiIndex( gridSize.x + 1, i );
-		setter.sourceIndex = MultiIndex( -1, -1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 0.0;
-
-		m_SettersU.push_back( setter );
-	}
-	for( index_t i = 0; i < gridSize.x + 3; ++i )
-	{
-		// top
-		setter.index = MultiIndex( i, gridSize.y + 1 );
-		setter.sourceIndex = setter.index - MultiIndex( 0, 1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 2.0;
-		setter.factor = -1.0;
-
-		m_SettersU.push_back( setter );
-
-		// bottom
-		setter.index = MultiIndex( i, 0 );
-		setter.sourceIndex = setter.index + MultiIndex( 0, 1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = -1.0;
-
-		m_SettersU.push_back( setter );
-	}
-	// square
-	for( index_t i = 0; i < squareSize.x - 1; ++i )
-	{
-		setter.index = MultiIndex( squarePos.x + 2 + i, squarePos.y + 1 );
-		setter.sourceIndex = setter.index - MultiIndex( 0, 1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = -1.0;
-
-		m_SettersU.push_back( setter );
-
-		setter.index = MultiIndex( squarePos.x + 2 + i,
-				squarePos.y + 1 + squareSize.y - 1 );
-		setter.sourceIndex = setter.index + MultiIndex( 0, 1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = -1.0;
-
-		m_SettersU.push_back( setter );
-	}
-	for( index_t i = 0; i < squareSize.y; ++i )
-	{
-		setter.index = MultiIndex( squarePos.x + 1, squarePos.y + 1 + i );
-		setter.sourceIndex = MultiIndex( -1, -1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 0.0;
-
-		m_SettersU.push_back( setter );
-
-		setter.index = MultiIndex( squarePos.x + 1 + squareSize.x,
-				squarePos.y + 1 + i );
-		setter.sourceIndex = MultiIndex( -1, -1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 0.0;
-
-		m_SettersU.push_back( setter );
-	}
-
-	// v boundaries
-	for( index_t i = 0; i < gridSize.y + 3; ++i )
-	{
-		// left
-		setter.index = MultiIndex( 0, i );
-		setter.sourceIndex = setter.index + MultiIndex( 1, 0 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = -1.0;
-
-		m_SettersV.push_back( setter );
-
-		// right
-		setter.index = MultiIndex( gridSize.x + 1, i );
-		setter.sourceIndex = setter.index - MultiIndex( 1, 0 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = -1.0;
-
-		m_SettersV.push_back( setter );
-	}
-	for( index_t i = 1; i <= gridSize.x; ++i )
-	{
-		// top
-		setter.index = MultiIndex( i, gridSize.y + 1 );
-		setter.sourceIndex = MultiIndex( -1, -1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 0.0;
-
-		m_SettersV.push_back( setter );
-
-		// bottom
-		setter.index = MultiIndex( i, 1 );
-		setter.sourceIndex = MultiIndex( -1, -1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 0.0;
-
-		m_SettersV.push_back( setter );
-	}
-	// square
-	for( index_t i = 0; i < squareSize.y - 1; ++i )
-	{
-		setter.index = MultiIndex( squarePos.x + 1, squarePos.y + 2 + i );
-		setter.sourceIndex = setter.index - MultiIndex( 1, 0 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = -1.0;
-
-		m_SettersV.push_back( setter );
-
-		setter.index = MultiIndex( squarePos.x + 1 + squareSize.x - 1,
-				squarePos.y + 2 + i );
-		setter.sourceIndex = setter.index + MultiIndex( 1, 0 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = -1.0;
-
-		m_SettersV.push_back( setter );
-	}
-	for( index_t i = 0; i < squareSize.x; ++i )
-	{
-		setter.index = MultiIndex( squarePos.x + 1 + i, squarePos.y + 1 );
-		setter.sourceIndex = MultiIndex( -1, -1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 0.0;
-
-		m_SettersV.push_back( setter );
-
-		setter.index = MultiIndex( squarePos.x + 1 + i,
-				squarePos.y + 1 + squareSize.y );
-		setter.sourceIndex = MultiIndex( -1, -1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 0.0;
-
-		m_SettersV.push_back( setter );
-	}
-
-	// p boundaries
-	for( index_t i = 1; i <= gridSize.x; ++i )
-	{
-		// top
-		setter.index = MultiIndex( i, gridSize.y + 1 );
-		setter.sourceIndex = setter.index - MultiIndex( 0, 1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 1.0;
-
-		m_SettersP.push_back( setter );
-
-		// bottom
-		setter.index = MultiIndex( i, 0 );
-		setter.sourceIndex = setter.index + MultiIndex( 0, 1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 1.0;
-
-		m_SettersP.push_back( setter );
-	}
-	for( index_t i = 1; i <= gridSize.y; ++i )
-	{
-		// left
-		setter.index = MultiIndex( 0, i );
-		setter.sourceIndex = setter.index + MultiIndex( 1, 0 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 1.0;
-
-		m_SettersP.push_back( setter );
-
-		// right
-		setter.index = MultiIndex( gridSize.x + 1, i );
-		setter.sourceIndex = setter.index - MultiIndex( 1, 0 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 1.0;
-
-		m_SettersP.push_back( setter );
-	}
-	// square
-	for( index_t i = 0; i < squareSize.x - 2; ++i )
-	{
-		setter.index = squarePos + MultiIndex( 2 + i, 1 );
-		setter.sourceIndex = setter.index - MultiIndex( 0, 1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 1.0;
-
-		m_SettersP.push_back( setter );
-
-		setter.index = squarePos + MultiIndex( 2 + i, 1 + squareSize.y - 1 );
-		setter.sourceIndex = setter.index + MultiIndex( 0, 1 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 1.0;
-
-		m_SettersP.push_back( setter );
-	}
-
-	setter.index = squarePos + MultiIndex::ONE;
-	setter.sourceIndex = setter.index - MultiIndex( 0, 1 );
-	setter.sourceIndex2 = setter.index - MultiIndex( 1, 0 );
-	setter.constant = 0.0;
-	setter.factor = 0.5;
-
-	m_SettersP.push_back( setter );
-
-	setter.index = squarePos + MultiIndex( 1 + squareSize.x - 1, 1 );
-	setter.sourceIndex = setter.index - MultiIndex( 0, 1 );
-	setter.sourceIndex2 = setter.index + MultiIndex( 1, 0 );
-	setter.constant = 0.0;
-	setter.factor = 0.5;
-
-	m_SettersP.push_back( setter );
-	
-	for( index_t i = 0; i < squareSize.y - 2; ++i )
-	{
-		setter.index = squarePos + MultiIndex( 1, 2 + i );
-		setter.sourceIndex = setter.index - MultiIndex( 1, 0 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 1.0;
-
-		m_SettersP.push_back( setter );
-
-		setter.index = squarePos + MultiIndex( 1 + squareSize.x - 1, 2 + i );
-		setter.sourceIndex = setter.index + MultiIndex( 1, 0 );
-		setter.sourceIndex2 = MultiIndex( -1, -1 );
-		setter.constant = 0.0;
-		setter.factor = 1.0;
-
-		m_SettersP.push_back( setter );
-	}
-
-	setter.index = squarePos + MultiIndex( 1, 1 + squareSize.y - 1 );
-	setter.sourceIndex = setter.index - MultiIndex( 1, 0 );
-	setter.sourceIndex2 = setter.index + MultiIndex( 0, 1 );
-	setter.constant = 0.0;
-	setter.factor = 0.5;
-
-	m_SettersP.push_back( setter );
-
-	setter.index = squarePos + squareSize;
-	setter.sourceIndex = setter.index + MultiIndex( 1, 0 );
-	setter.sourceIndex2 = setter.index + MultiIndex( 0, 1 );
-	setter.constant = 0.0;
-	setter.factor = 0.5;
-
-	m_SettersP.push_back( setter );
-
-	// mask functions
-	set( m_MaskU, MultiIndex::ZERO, MultiIndex( 2, gridSize.y + 2 ),
-			constant( false ) );
-	set( m_MaskU, MultiIndex( gridSize.x + 1, 0 ),
-			gridSize + MultiIndex( 3, 2 ), constant( false ) );
-	set( m_MaskU, MultiIndex( 2, 0 ), MultiIndex( gridSize.x + 1, 1 ),
-			constant( false ) );
-	set( m_MaskU, MultiIndex( 2, gridSize.y + 1 ),
-			gridSize + MultiIndex( 1, 2 ), constant( false ) );
-
-	set( m_MaskU, squarePos + MultiIndex::ONE,
-			squarePos + squareSize + MultiIndex( 2, 1 ), constant( false ) );
-
-	set( m_MaskV, MultiIndex::ZERO, MultiIndex( gridSize.x + 2, 2 ),
-			constant( false ) );
-	set( m_MaskV, MultiIndex( 0, gridSize.y + 1 ),
-			gridSize + MultiIndex( 2, 3 ), constant( false ) );
-	set( m_MaskV, MultiIndex( 0, 2 ), MultiIndex( 1, gridSize.y + 1 ),
-			constant( false ) );
-	set( m_MaskV, MultiIndex( gridSize.x + 1, 2 ),
-			gridSize + MultiIndex( 2, 1 ), constant( false ) );
-
-	set( m_MaskV, squarePos + MultiIndex::ONE,
-			squarePos + squareSize + MultiIndex( 1, 2 ), constant( false ) );
-
-	set( m_MaskP, MultiIndex::ZERO, MultiIndex( 1, gridSize.y + 2 ),
-			constant( false ) );
-	set( m_MaskP, MultiIndex( 0, gridSize.y + 1 ),
-			gridSize + MultiIndex( 2, 2 ), constant( false ) );
-	set( m_MaskP, MultiIndex( 0, 1 ), MultiIndex( 1, gridSize.y + 1 ),
-			constant( false ) );
-	set( m_MaskP, MultiIndex( gridSize.x + 1, 1 ),
-			gridSize + MultiIndex( 2, 1 ), constant( false ) );
-
-	set( m_MaskP, squarePos + MultiIndex::ONE,
-			squarePos + squareSize + MultiIndex::ONE, constant( false ) );
-}
-
 void Geometry::addPolygon( const Polygon& polygon )
 {
 	index_t id = m_iShapeCounter++;
@@ -375,7 +44,9 @@ void Geometry::addPolygon( const Polygon& polygon )
 			min,
 			max,
 			id,
-			polygon.m_Lines[ 0 ].value );
+			polygon.m_Lines[ 0 ].value,
+			polygon.m_Lines[ 0 ].tType,
+			polygon.m_Lines[ 0 ].tValue );
 
 	for( std::size_t i = 1; i < polygon.m_Lines.size(); ++i )
 	{
@@ -385,10 +56,12 @@ void Geometry::addPolygon( const Polygon& polygon )
 				min,
 				max,
 				id,
-				polygon.m_Lines[ i ].value );
+				polygon.m_Lines[ i ].value,
+				polygon.m_Lines[ i ].tType,
+				polygon.m_Lines[ i ].tValue );
 	}
 
-	// naive scanline algorithm, assumes no intersecting lines
+	// naive scanline algorithm, assumes no intersecting lines + convex shape
 	for( index_t j = min.y; j <= max.y; ++j )
 	{
 		index_t imin = max.x;
@@ -420,26 +93,27 @@ void Geometry::addPolygon( const Polygon& polygon )
 }
 
 void Geometry::addRectangle( const Point& start, const Point& end,
-		BoundaryType boundary, const Point& value )
+		BoundaryType boundary, const Point& value,
+		TBoundaryType tBoundary, real tValue )
 {
 	Polygon poly;
 	poly.setStartPoint( start );
-	poly.addLine( Point( end.x, start.y ), boundary, value );
-	poly.addLine( end, boundary, value );
-	poly.addLine( Point( start.x, end.y ), boundary, value );
-	poly.addLine( start, boundary, value );
+	poly.addLine( Point( end.x, start.y ), boundary, value, tBoundary, tValue );
+	poly.addLine( end, boundary, value, tBoundary, tValue );
+	poly.addLine( Point( start.x, end.y ), boundary, value, tBoundary, tValue );
+	poly.addLine( start, boundary, value, tBoundary, tValue );
 
 	addPolygon( poly );
 }
 
 void Geometry::addRectangle( const Point& start, const Point& end,
-		BoundaryType boundary )
+		BoundaryType boundary, TBoundaryType tBoundary )
 {
-	addRectangle( start, end, boundary, Point::ZERO );
+	addRectangle( start, end, boundary, Point::ZERO, tBoundary, 0.0 );
 }
 
 void Geometry::setLeftBoundaryCondition( BoundaryType condition,
-		const Point& value )
+		const Point& value, TBoundaryType tBoundary, real tValue )
 {
 	BoundarySetter setter;
 	switch( condition )
@@ -499,6 +173,41 @@ void Geometry::setLeftBoundaryCondition( BoundaryType condition,
 				setter.factor = 1.0;
 
 				m_SettersP.push_back( setter );
+			}
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	};
+	switch( tBoundary )
+	{
+		case TBoundaryType::Dirichlet:
+		{
+			for( index_t i = 0; i < m_GridSize.y; ++i )
+			{
+				setter.index = MultiIndex( 0, 1 + i );
+				setter.sourceIndex = setter.index + MultiIndex( 1, 0 );
+				setter.sourceIndex2 = MultiIndex( -1, -1 );
+				setter.constant = tValue;
+				setter.factor = -1.0;
+
+				m_SettersT.push_back( setter );
+			}
+			break;
+		}
+		case TBoundaryType::Neumann:
+		{
+			for( index_t i = 0; i < m_GridSize.y; ++i )
+			{
+				setter.index = MultiIndex( 0, 1 + i );
+				setter.sourceIndex = setter.index + MultiIndex( 1, 0 );
+				setter.sourceIndex2 = MultiIndex( -1, -1 );
+				setter.constant = 0.0;
+				setter.factor = 1.0;
+
+				m_SettersT.push_back( setter );
 			}
 			break;
 		}
@@ -510,7 +219,7 @@ void Geometry::setLeftBoundaryCondition( BoundaryType condition,
 }
 
 void Geometry::setRightBoundaryCondition( BoundaryType condition,
-		const Point& value )
+		const Point& value, TBoundaryType tBoundary, real tValue )
 {
 	BoundarySetter setter;
 	switch( condition )
@@ -578,10 +287,45 @@ void Geometry::setRightBoundaryCondition( BoundaryType condition,
 			break;
 		}
 	};
+	switch( tBoundary )
+	{
+		case TBoundaryType::Dirichlet:
+		{
+			for( index_t i = 0; i < m_GridSize.y; ++i )
+			{
+				setter.index = MultiIndex( m_GridSize.x + 1, 1 + i );
+				setter.sourceIndex = setter.index - MultiIndex( 1, 0 );
+				setter.sourceIndex2 = MultiIndex( -1, -1 );
+				setter.constant = tValue;
+				setter.factor = -1.0;
+
+				m_SettersT.push_back( setter );
+			}
+			break;
+		}
+		case TBoundaryType::Neumann:
+		{
+			for( index_t i = 0; i < m_GridSize.y; ++i )
+			{
+				setter.index = MultiIndex( m_GridSize.x + 1, 1 + i );
+				setter.sourceIndex = setter.index - MultiIndex( 1, 0 );
+				setter.sourceIndex2 = MultiIndex( -1, -1 );
+				setter.constant = 0.0;
+				setter.factor = 1.0;
+
+				m_SettersT.push_back( setter );
+			}
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	};
 }
 
 void Geometry::setBottomBoundaryCondition( BoundaryType condition,
-		const Point& value )
+		const Point& value, TBoundaryType tBoundary, real tValue )
 {
 	BoundarySetter setter;
 	switch( condition )
@@ -649,10 +393,45 @@ void Geometry::setBottomBoundaryCondition( BoundaryType condition,
 			break;
 		}
 	};
+	switch( tBoundary )
+	{
+		case TBoundaryType::Dirichlet:
+		{
+			for( index_t i = 0; i < m_GridSize.x; ++i )
+			{
+				setter.index = MultiIndex( 1 + i, 0 );
+				setter.sourceIndex = setter.index + MultiIndex( 0, 1 );
+				setter.sourceIndex2 = MultiIndex( -1, -1 );
+				setter.constant = tValue;
+				setter.factor = -1.0;
+
+				m_SettersT.push_back( setter );
+			}
+			break;
+		}
+		case TBoundaryType::Neumann:
+		{
+			for( index_t i = 0; i < m_GridSize.x; ++i )
+			{
+				setter.index = MultiIndex( 1 + i, 0 );
+				setter.sourceIndex = setter.index + MultiIndex( 0, 1 );
+				setter.sourceIndex2 = MultiIndex( -1, -1 );
+				setter.constant = 0.0;
+				setter.factor = 1.0;
+
+				m_SettersT.push_back( setter );
+			}
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	};
 }
 
 void Geometry::setTopBoundaryCondition( BoundaryType condition,
-		const Point& value )
+		const Point& value, TBoundaryType tBoundary, real tValue )
 {
 	BoundarySetter setter;
 	switch( condition )
@@ -712,6 +491,41 @@ void Geometry::setTopBoundaryCondition( BoundaryType condition,
 				setter.factor = 1.0;
 
 				m_SettersP.push_back( setter );
+			}
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	};
+	switch( tBoundary )
+	{
+		case TBoundaryType::Dirichlet:
+		{
+			for( index_t i = 0; i < m_GridSize.x; ++i )
+			{
+				setter.index = MultiIndex( 1 + i, m_GridSize.y + 1 );
+				setter.sourceIndex = setter.index - MultiIndex( 0, 1 );
+				setter.sourceIndex2 = MultiIndex( -1, -1 );
+				setter.constant = tValue;
+				setter.factor = -1.0;
+
+				m_SettersT.push_back( setter );
+			}
+			break;
+		}
+		case TBoundaryType::Neumann:
+		{
+			for( index_t i = 0; i < m_GridSize.x; ++i )
+			{
+				setter.index = MultiIndex( 1 + i, m_GridSize.y + 1 );
+				setter.sourceIndex = setter.index - MultiIndex( 0, 1 );
+				setter.sourceIndex2 = MultiIndex( -1, -1 );
+				setter.constant = 0.0;
+				setter.factor = 1.0;
+
+				m_SettersT.push_back( setter );
 			}
 			break;
 		}
@@ -763,6 +577,7 @@ void Geometry::bake()
 	m_SettersU.reserve( numBoundaryCells );
 	m_SettersV.reserve( numBoundaryCells );
 	m_SettersP.reserve( numBoundaryCells );
+	m_SettersT.reserve( numBoundaryCells );
 
 	static const MultiIndex mi10( 1, 0 );
 	static const MultiIndex mi01( 0, 1 );
@@ -1047,6 +862,234 @@ void Geometry::bake()
 					}
 					break;
 				}
+				case BoundaryType::Outflow: // TODO
+				{
+					switch( cell.orientation )
+					{
+						case Orientation::North:
+						case Orientation::South:
+						{
+							int dir = ( cell.orientation == Orientation::North ) ? 1 : -1;
+
+							setter.index = idx + MultiIndex::ONE;
+							setter.sourceIndex =
+								setter.index + MultiIndex( 0, dir );
+							setter.sourceIndex2 = miNeg;
+							setter.constant = 2.0 * cell.value.x;
+							setter.factor = -1.0;
+
+							//printf( "--- %f\n", setter.constant );
+
+							m_SettersU.push_back( setter );
+
+							setter.index = idx + MultiIndex( 1, 1 + ( cell.orientation == Orientation::North ) );
+							setter.sourceIndex = miNeg;
+							setter.constant = cell.value.y;
+
+							m_SettersV.push_back( setter );
+
+							setter.index = idx + MultiIndex::ONE;
+							setter.sourceIndex =
+								setter.index + MultiIndex( 0, dir );
+							setter.constant = 0.0;
+							setter.factor = 1.0;
+
+							m_SettersP.push_back( setter );
+							break;
+						}
+						case Orientation::East:
+						case Orientation::West:
+						{
+							int dir = ( cell.orientation == Orientation::East ) ? 1 : -1;
+
+							setter.index = idx + MultiIndex::ONE;
+							setter.sourceIndex =
+								setter.index + MultiIndex( dir, 0 );
+							setter.sourceIndex2 = miNeg;
+							setter.constant = 2.0 * cell.value.y;
+							setter.factor = -1.0;
+
+							m_SettersV.push_back( setter );
+
+							setter.index = idx + MultiIndex( 1 + ( cell.orientation == Orientation::East ), 1 );
+							setter.sourceIndex = miNeg;
+							setter.constant = cell.value.x;
+
+							m_SettersU.push_back( setter );
+
+							setter.index = idx + MultiIndex::ONE;
+							setter.sourceIndex =
+								setter.index + MultiIndex( dir, 0 );
+							setter.constant = 0.0;
+							setter.factor = 1.0;
+
+							m_SettersP.push_back( setter );
+							break;
+						}
+						case Orientation::NorthEast:
+						case Orientation::SouthEast:
+						case Orientation::SouthWest:
+						case Orientation::NorthWest:
+						{
+							int dirH =
+								( cell.orientation == Orientation::NorthEast
+								  || cell.orientation == Orientation::SouthEast )
+								? 1 : -1;
+							int dirV =
+								( cell.orientation == Orientation::NorthEast
+								  || cell.orientation == Orientation::NorthWest )
+								? 1 : -1;
+							int posH = ( dirH > 0 );
+							int posV = ( dirV > 0 );
+
+							if( posH )
+							{
+								setter.index = idx + MultiIndex::ONE;
+								setter.sourceIndex =
+									setter.index + MultiIndex( 0, dirV );
+								setter.sourceIndex2 = miNeg;
+								setter.constant = 2.0 * cell.value.x;
+								setter.factor = -1.0;
+
+								m_SettersU.push_back( setter );
+							}
+
+							setter.index = idx + MultiIndex( 1 + posH, 1 );
+							setter.sourceIndex = miNeg;
+							setter.sourceIndex2 = miNeg;
+							setter.constant = cell.value.x;
+
+							m_SettersU.push_back( setter );
+
+							if( posV )
+							{
+								setter.index = idx + MultiIndex::ONE;
+								setter.sourceIndex =
+									setter.index + MultiIndex( dirH, 0 );
+								setter.sourceIndex2 = miNeg;
+								setter.constant = 2.0 * cell.value.y;
+								setter.factor = -1.0;
+
+								m_SettersV.push_back( setter );
+							}
+
+							setter.index = idx + MultiIndex( 1, 1 + posV );
+							setter.sourceIndex = miNeg;
+							setter.sourceIndex2 = miNeg;
+							setter.constant = cell.value.y;
+
+							m_SettersV.push_back( setter );
+
+							setter.index = idx + MultiIndex::ONE;
+							setter.sourceIndex =
+								setter.index + MultiIndex( dirH, 0 );
+							setter.sourceIndex2 =
+								setter.index + MultiIndex( 0, dirV );
+							setter.constant = 0.0;
+							setter.factor = 0.5;
+
+							m_SettersP.push_back( setter );
+							break;
+						}
+					}
+					break;
+				}
+				default:
+				{
+					break;
+				}
+			}
+			switch( cell.tBoundary )
+			{
+				case TBoundaryType::Dirichlet:
+				{
+					switch( cell.orientation )
+					{
+						case Orientation::North:
+						case Orientation::South:
+						case Orientation::East:
+						case Orientation::West:
+						{
+							MultiIndex dir = MultiIndex(
+									( cell.orientation == Orientation::East ) ? 1 : -1,
+									( cell.orientation == Orientation::North ) ? 1 : -1 );
+
+							setter.index = idx + MultiIndex::ONE;
+							setter.sourceIndex = setter.index + dir;
+							setter.sourceIndex2 = MultiIndex( -1, -1 );
+							setter.constant = cell.tValue;
+							setter.factor = -1.0;
+
+							m_SettersT.push_back( setter );
+							break;
+						}
+						case Orientation::NorthEast:
+						case Orientation::SouthEast:
+						case Orientation::SouthWest:
+						case Orientation::NorthWest:
+						{
+							setter.index = idx + MultiIndex::ONE;
+							setter.sourceIndex = MultiIndex( -1, -1 );
+							setter.sourceIndex2 = MultiIndex( -1, -1 );
+							setter.constant = cell.tValue;
+							setter.factor = 0.0;
+
+							m_SettersT.push_back( setter );
+							break;
+						}
+					}
+					break;
+				}
+				case TBoundaryType::Neumann:
+				{
+					switch( cell.orientation )
+					{
+						case Orientation::North:
+						case Orientation::South:
+						case Orientation::East:
+						case Orientation::West:
+						{
+							MultiIndex dir = MultiIndex(
+									( cell.orientation == Orientation::East ) ? 1 : -1,
+									( cell.orientation == Orientation::North ) ? 1 : -1 );
+
+							setter.index = idx + MultiIndex::ONE;
+							setter.sourceIndex = setter.index + dir;
+							setter.sourceIndex2 = MultiIndex( -1, -1 );
+							setter.constant = 0.0;
+							setter.factor = 1.0;
+
+							m_SettersT.push_back( setter );
+							break;
+						}
+						case Orientation::NorthEast:
+						case Orientation::SouthEast:
+						case Orientation::SouthWest:
+						case Orientation::NorthWest:
+						{
+							int dirH =
+								( cell.orientation == Orientation::NorthEast
+								  || cell.orientation == Orientation::SouthEast )
+								? 1 : -1;
+							int dirV =
+								( cell.orientation == Orientation::NorthEast
+								  || cell.orientation == Orientation::NorthWest )
+								? 1 : -1;
+
+							setter.index = idx + MultiIndex::ONE;
+							setter.sourceIndex =
+								setter.index + MultiIndex( dirH, 0 );
+							setter.sourceIndex2 =
+								setter.index + MultiIndex( 0, dirV );
+							setter.constant = 0.0;
+							setter.factor = 0.5;
+
+							m_SettersT.push_back( setter );
+							break;
+						}
+					}
+					break;
+				}
 				default:
 				{
 					break;
@@ -1069,6 +1112,7 @@ void Geometry::bake()
 		m_MaskP( m_SettersP[ i ].index.x, m_SettersP[ i ].index.y ) = false;
 	}
 
+	/*
 	for( index_t j = 0; j < m_Raster.size().y; ++j )
 	{
 		for( index_t i = 0; i < m_Raster.size().x; ++i )
@@ -1077,6 +1121,7 @@ void Geometry::bake()
 		}
 		printf( "\n" );
 	}
+	*/
 }
 
 void Geometry::applyVelocityBoundary( GridFunction& u, GridFunction& v ) const
@@ -1088,6 +1133,11 @@ void Geometry::applyVelocityBoundary( GridFunction& u, GridFunction& v ) const
 void Geometry::applyPressureBoundary( GridFunction& p ) const
 {
 	applySetters( m_SettersP, p );
+}
+
+void Geometry::applyTemperatureBoundary( GridFunction& T ) const
+{
+	applySetters( m_SettersT, T );
 }
 
 const MaskFunction& Geometry::getComputationMaskU() const
@@ -1107,7 +1157,7 @@ const MaskFunction& Geometry::getComputationMaskP() const
 
 void Geometry::rasterizeLine( const Point& start, const Point& end,
 		BoundaryType boundary, MultiIndex& minIdx, MultiIndex& maxIdx,
-		index_t id, const Point& value )
+		index_t id, const Point& value, TBoundaryType tBoundary, real tValue )
 {
 	int x1 = std::round( start.x / m_DomainSize.x * ( m_GridSize.x - 1 ) );
 	int y1 = std::round( start.y / m_DomainSize.y * ( m_GridSize.y - 1 ) );
@@ -1146,6 +1196,8 @@ void Geometry::rasterizeLine( const Point& start, const Point& end,
 		m_Raster( x, y ).boundary = boundary;
 		m_Raster( x, y ).shapeId = id;
 		m_Raster( x, y ).value = value;
+		m_Raster( x, y ).tBoundary = tBoundary;
+		m_Raster( x, y ).tValue = tValue;
 
 		for( i = 0; x < xe; i++ )
 		{
@@ -1171,6 +1223,8 @@ void Geometry::rasterizeLine( const Point& start, const Point& end,
 			m_Raster( x, y ).boundary = boundary;
 			m_Raster( x, y ).shapeId = id;
 			m_Raster( x, y ).value = value;
+			m_Raster( x, y ).tBoundary = tBoundary;
+			m_Raster( x, y ).tValue = tValue;
 		}
 	}
 	else
@@ -1192,6 +1246,8 @@ void Geometry::rasterizeLine( const Point& start, const Point& end,
 		m_Raster( x, y ).boundary = boundary;
 		m_Raster( x, y ).shapeId = id;
 		m_Raster( x, y ).value = value;
+		m_Raster( x, y ).tBoundary = tBoundary;
+		m_Raster( x, y ).tValue = tValue;
 
 		for( i = 0; y < ye; i++ )
 		{
@@ -1217,6 +1273,8 @@ void Geometry::rasterizeLine( const Point& start, const Point& end,
 			m_Raster( x, y ).boundary = boundary;
 			m_Raster( x, y ).shapeId = id;
 			m_Raster( x, y ).value = value;
+			m_Raster( x, y ).tBoundary = tBoundary;
+			m_Raster( x, y ).tValue = tValue;
 		}
 	}
 }
@@ -1244,8 +1302,9 @@ void Geometry::applySetters( const std::vector<BoundarySetter>& setters,
 
 
 Geometry::Polygon::Line::Line( const Point& pt, BoundaryType t,
-		const Point& val )
-	: endPoint( pt ), type( t ), value( val )
+		const Point& val, TBoundaryType tBoundary, real tValue )
+	: endPoint( pt ), type( t ), value( val ), tType( tBoundary ),
+	tValue( tValue )
 {
 }
 
@@ -1254,13 +1313,14 @@ void Geometry::Polygon::setStartPoint( const Point& point )
 	m_StartPoint = point;
 }
 
-void Geometry::Polygon::addLine( const Point& endPoint, BoundaryType boundary )
+void Geometry::Polygon::addLine( const Point& endPoint, BoundaryType boundary,
+		TBoundaryType tBoundary )
 {
-	m_Lines.push_back( Line( endPoint, boundary, Point::ZERO ) );
+	m_Lines.push_back( Line( endPoint, boundary, Point::ZERO, tBoundary, 0.0 ) );
 }
 
 void Geometry::Polygon::addLine( const Point& endPoint, BoundaryType boundary,
-		const Point& boundaryValue )
+		const Point& boundaryValue, TBoundaryType tBoundary, real tValue )
 {
-	m_Lines.push_back( Line( endPoint, boundary, boundaryValue ) );
+	m_Lines.push_back( Line( endPoint, boundary, boundaryValue, tBoundary, tValue ) );
 }

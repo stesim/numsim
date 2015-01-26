@@ -3,7 +3,7 @@ function visualize(ranks,step,instance)
 	rx = ranks(2);
 	ry = ranks(1);
 
-	uvp = stitch_subdomains('uvp',5);
+	uvp = stitch_subdomains('uvpT',6);
 
     for i=1:6
         clf(i);
@@ -29,16 +29,22 @@ function visualize(ranks,step,instance)
 	
 	figure(4);
 	startx = rand([1,floor(gridSize(2)*1.7)]);
-	streamline(uvp{1},uvp{2},uvp{3},uvp{4},startx,rand([1,size(startx)]));
+	streamslice(uvp{1},uvp{2},uvp{3},uvp{4},1.42);
 	title('streamlines');
 	xlabel('x');
 	ylabel('y');
 
-	psi = stitch_subdomains('psi',3);
+	%psi = stitch_subdomains('psi',3);
 
+	%figure(5);
+	%surf(psi{1},psi{2},psi{3},'EdgeColor','None');
+	%title('velocity potential');
+	%xlabel('x');
+	%ylabel('y');
+    
 	figure(5);
-	surf(psi{1},psi{2},psi{3},'EdgeColor','None');
-	title('velocity potential');
+	surf(uvp{1},uvp{2},uvp{6},'EdgeColor','None');
+	title('temperature');
 	xlabel('x');
 	ylabel('y');
 

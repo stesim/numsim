@@ -13,6 +13,7 @@ real Computation::computeTimeStep( const GridFunction& u,
 		const GridFunction& v,
 		const Point& h,
 		real Re,
+		real Pr,
 		real tau )
 {
 	static const real EPS = 1.0 / ( 1 << 20 );
@@ -22,9 +23,9 @@ real Computation::computeTimeStep( const GridFunction& u,
 
 	real uMax = std::max( max( abs( u ), MultiIndex::ZERO, u.size() ), EPS );
 	real vMax = std::max( max( abs( v ), MultiIndex::ZERO, v.size() ), EPS );
+	real tLim = 0.5 * Re * Pr / ( 1.0 / hx2 + 1 / hy2 );
 
-	real dt_local = tau * std::min( Re / 2.0 * hx2 * hy2 / ( hx2 + hy2 ),
-			std::min( h.x / uMax, h.y / vMax ) );
+	real dt_local = tau * std::min( tLim, std::min( h.x / uMax, h.y / vMax ) );
 
 	return Communication::min( dt_local );
 }
@@ -52,12 +53,15 @@ void Computation::computeMomentumEquations( GridFunction& f,
 		GridFunction& g,
 		const GridFunction& u,
 		const GridFunction& v,
+		const GridFunction& T,
+		const Point& vf,
 		const MaskFunction& uMask,
 		const MaskFunction& vMask,
 		const Point& h,
 		real dt,
 		real Re,
-		real alpha )
+		real alpha,
+		real beta )
 {
 	// ========================= compute f =========================
 	// --------------------- compute d(u^2)/dx ---------------------
@@ -68,10 +72,12 @@ void Computation::computeMomentumEquations( GridFunction& f,
 	auto uvy = utils::diffY_Bw( ( 0.5 * ( eval<-1,+1>( v ) + eval<0,+1>( v ) ) ) * ( 0.5 * ( u + eval<0,+1>( u ) ) ), h.y )
 		 + alpha * utils::diffY_Bw( ( 0.5 * abs( eval<-1,+1>( v ) + eval<0,+1>( v ) ) ) * ( 0.5 * ( u - eval<0,+1>( u ) ) ), h.y );
 
+	auto Tvfx = ( constant( 1.0 ) - beta * ( eval<-1,0>( T ) + T ) ) * vf.x;
+
 	// ---------------------- compute final f ----------------------
 	utils::setMasked( f, MultiIndex::ONE, f.size() - MultiIndex::ONE, uMask,
 			u + dt * ( 1.0 / Re * utils::diffXX_YY( u, h )
-				- u2x - uvy ) );
+				- u2x - uvy + Tvfx ) );
 
 	// ========================= compute g =========================
 	// --------------------- compute d(v^2)/dy ---------------------
@@ -82,10 +88,41 @@ void Computation::computeMomentumEquations( GridFunction& f,
 	auto uvx = utils::diffX_Bw( ( 0.5 * ( eval<+1,-1>( u ) + eval<+1,0>( u ) ) ) * ( 0.5 * ( v + eval<+1,0>( v ) ) ), h.x )
 		 + alpha * utils::diffX_Bw( ( 0.5 * abs( eval<+1,-1>( u ) + eval<+1,0>( u ) ) ) * ( 0.5 * ( v - eval<+1,0>( v ) ) ), h.x );
 
+	auto Tvfy = ( constant( 1.0 ) - beta * ( eval<0,-1>( T ) + T ) ) * vf.y;
+
 	// ---------------------- compute final g ----------------------
 	utils::setMasked( g, MultiIndex::ONE, g.size() - MultiIndex::ONE, vMask,
 			v + dt * ( 1.0 / Re * utils::diffXX_YY( v, h )
-				- v2y - uvx ) );
+				- v2y - uvx + Tvfy ) );
+}
+
+void Computation::computeTemperatureEquations( GridFunction& T,
+		const GridFunction& TT,
+		const GridFunction& u,
+		const GridFunction& v,
+		const MaskFunction& pMask,
+		const Point& h,
+		real dt,
+		real Re,
+		real Pr,
+		real gamma )
+{
+	auto uu = eval<+1,0>( u );
+	auto vv = eval<0,+1>( v );
+
+	// ========================= compute T =========================
+	// --------------------- compute d(uT)/dx ---------------------
+	auto uTx = utils::diffX_Bw( uu * 0.5 * ( eval<+1,0>( TT ) + TT )
+		+ gamma * ( abs( uu ) * 0.5 * ( TT - eval<+1,0>( TT ) ) ), h.x );
+
+	// --------------------- compute d(vT)/dy ---------------------
+	auto vTy = utils::diffY_Bw( vv * 0.5 * ( eval<0,+1>( TT ) + TT )
+		+ gamma * ( abs( vv ) * 0.5 * ( TT - eval<0,+1>( TT ) ) ), h.y );
+
+	// ---------------------- compute final f ----------------------
+	utils::setMasked( T, MultiIndex::ONE, T.size() - MultiIndex::ONE, pMask,
+			TT + dt * ( 1.0 / ( Re * Pr ) * utils::diffXX_YY( TT, h )
+				- uTx - vTy ) );
 }
 
 void Computation::computeRightHandSide( GridFunction& rhs,

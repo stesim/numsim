@@ -15,6 +15,7 @@ public:
 			const GridFunction& v,
 			const Point& h,
 			real Re,
+			real Pr,
 			real tau );
 
 	//! Compute velocities from intermediate velocities
@@ -40,6 +41,7 @@ public:
 	//! \param g Second intermediate velocity component
 	//! \param u First velocity component
 	//! \param v Second velocity component
+	//! \param vf Volumetric force
 	//! \param h Spacial step size
 	//! \param dt Time step
 	//! \param Re Reynolds number
@@ -47,12 +49,26 @@ public:
 			GridFunction& g,
 			const GridFunction& u,
 			const GridFunction& v,
+			const GridFunction& T,
+			const Point& vf,
 			const MaskFunction& uMask,
 			const MaskFunction& vMask,
 			const Point& h,
 			real dt,
 			real Re,
-			real alpha );
+			real alpha,
+			real beta );
+
+	static void computeTemperatureEquations( GridFunction& T,
+			const GridFunction& TT,
+			const GridFunction& u,
+			const GridFunction& v,
+			const MaskFunction& pMask,
+			const Point& h,
+			real dt,
+			real Re,
+			real Pr,
+			real gamma );
 
 	//! Compute the right hand side of the linear system for the pressure
 	//! \param f First intermediate velocity component

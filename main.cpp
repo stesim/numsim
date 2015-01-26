@@ -73,21 +73,21 @@ void simulate( Params params, int instance )
 	// construct geometry
 	Geometry geom( localDomainSize, localGridSize );
 	//geom.addRectangle( Point( 0.0, 0.0 ), Point( 1.0, 0.1 ), Geometry::BoundaryType::Noslip );
-	geom.setBottomBoundaryCondition( Geometry::BoundaryType::Noslip );
+	geom.setBottomBoundaryCondition( Geometry::BoundaryType::Noslip, Point::ZERO, Geometry::TBoundaryType::Neumann, 0.0 );
 	//geom.addRectangle( Point( 0.0, 0.1 ), Point( 0.1, 0.9 ), Geometry::BoundaryType::Noslip );
-	geom.setLeftBoundaryCondition( Geometry::BoundaryType::Noslip );
+	geom.setLeftBoundaryCondition( Geometry::BoundaryType::Noslip, Point::ZERO, Geometry::TBoundaryType::Neumann, 0.0 );
 	//geom.addRectangle( Point( 0.9, 0.1 ), Point( 1.0, 0.9 ), Geometry::BoundaryType::Noslip );
-	geom.setRightBoundaryCondition( Geometry::BoundaryType::Noslip );
+	geom.setRightBoundaryCondition( Geometry::BoundaryType::Noslip, Point::ZERO, Geometry::TBoundaryType::Neumann, 0.0 );
 	//geom.addRectangle( Point( 0.0, 0.9 ), Point( 1.0, 1.0 ), Geometry::BoundaryType::Inflow, Point( 1.0, 0.0 ) );
-	geom.setTopBoundaryCondition( Geometry::BoundaryType::Inflow, Point( 1.0, 0.0 ) );
+	geom.setTopBoundaryCondition( Geometry::BoundaryType::Inflow, Point( 0.0, 0.0 ), Geometry::TBoundaryType::Neumann, 0.0 );
 
 	//geom.addRectangle( Point( 0.25, 0.25 ), Point( 0.5, 0.5 ), Geometry::BoundaryType::Noslip );
 	Geometry::Polygon poly;
 	poly.setStartPoint( Point( 0.25, 0.25 ) );
-	poly.addLine( Point( 0.35, 0.25 ), Geometry::BoundaryType::Noslip );
-	poly.addLine( Point( 0.55, 0.75 ), Geometry::BoundaryType::Noslip );
-	poly.addLine( Point( 0.45, 0.75 ), Geometry::BoundaryType::Noslip );
-	poly.addLine( Point( 0.25, 0.25 ), Geometry::BoundaryType::Noslip );
+	poly.addLine( Point( 0.35, 0.25 ), Geometry::BoundaryType::Noslip, Point( 0.0, 0.0 ), Geometry::TBoundaryType::Dirichlet, 0.5 );
+	poly.addLine( Point( 0.55, 0.75 ), Geometry::BoundaryType::Noslip, Point( 0.0, 0.0 ), Geometry::TBoundaryType::Dirichlet, 0.5 );
+	poly.addLine( Point( 0.45, 0.75 ), Geometry::BoundaryType::Noslip, Point( 0.0, 0.0 ), Geometry::TBoundaryType::Dirichlet, 0.5 );
+	poly.addLine( Point( 0.25, 0.25 ), Geometry::BoundaryType::Noslip, Point( 0.0, 0.0 ), Geometry::TBoundaryType::Dirichlet, 0.5 );
 	geom.addPolygon( poly );
 
 	geom.bake();
@@ -103,6 +103,8 @@ void simulate( Params params, int instance )
 	GridFunction g( localGridSize + MultiIndex( 2, 3 ) );
 	GridFunction p( localGridSize + MultiIndex( 2, 2 ) );
 	GridFunction rhs( localGridSize );
+	GridFunction T( localGridSize + MultiIndex( 1, 1 ) );
+	GridFunction TT( localGridSize + MultiIndex( 1, 1 ) );
 
 	GridFunction psi( localGridSize + MultiIndex::ONE );
 	GridFunction zeta( localGridSize - MultiIndex::ONE );
@@ -121,6 +123,8 @@ void simulate( Params params, int instance )
 	f = constant( params.initialVelocity.x );
 	g = constant( params.initialVelocity.y );
 
+	T = constant( 0.0 );
+
 	auto startTime = getTime();
 
 	/*
@@ -128,6 +132,7 @@ void simulate( Params params, int instance )
 			leftBoundary, topBoundary, rightBoundary, bottomBoundary );
 	*/
 	geom.applyVelocityBoundary( u, v );
+	geom.applyTemperatureBoundary( T );
 
 	real t = 0.0;
 	index_t step = 0;
@@ -139,11 +144,29 @@ void simulate( Params params, int instance )
 		real timeBeginStep = getElapsedTime( startTime );
 
 		real dt = Computation::computeTimeStep(
-				u, v, h, params.Re, params.tau );
+				u, v, h, params.Re, params.Pr, params.tau );
+
+		if( step % 2 == 1 )
+		{
+			Computation::computeTemperatureEquations( T, TT, u, v, pMask, h,
+					dt, params.Re, params.Pr, params.gamma );
+			geom.applyTemperatureBoundary( T );
+	
+			// compute intermediate velocities
+			Computation::computeMomentumEquations( f, g, u, v, T, params.volForce,
+					uMask, vMask, h, dt, params.Re, params.alpha, params.beta );
+		}
+		else
+		{
+			Computation::computeTemperatureEquations( TT, T, u, v, pMask, h,
+					dt, params.Re, params.Pr, params.gamma );
+			geom.applyTemperatureBoundary( TT );
+	
+			// compute intermediate velocities
+			Computation::computeMomentumEquations( f, g, u, v, TT, params.volForce,
+					uMask, vMask, h, dt, params.Re, params.alpha, params.beta );
+		}
 		
-		// compute intermediate velocities
-		Computation::computeMomentumEquations(
-				f, g, u, v, uMask, vMask, h, dt, params.Re, params.alpha );
 		/*
 		Computation::setVelocityBoundary( f, g,
 				leftBoundary, topBoundary, rightBoundary, bottomBoundary );
@@ -223,8 +246,16 @@ void simulate( Params params, int instance )
 
 			Computation::computeVorticity( zeta, u, v, h );
 
-			IO::writeRawOutput( u, v, p, psi, zeta,
-					h, localGridOffset, instance, step, commRank );
+			if( step % 2 == 1 )
+			{
+				IO::writeRawOutput( u, v, p, T, psi, zeta,
+						h, localGridOffset, instance, step, commRank );
+			}
+			else
+			{
+				IO::writeRawOutput( u, v, p, TT, psi, zeta,
+						h, localGridOffset, instance, step, commRank );
+			}
 			/*
 			IO::writeVTKFile( params.gridSize, u, v,
 					p, h, params, instance, step );
@@ -261,9 +292,13 @@ Params defaultParams()
 	p.eps = 0.001;
 	p.omega = 1.7;
 	p.alpha = 0.9;
+	p.gamma = 0.9;
 	p.Re = 1000;
+	p.Pr = 7;
+	p.beta = 0.1;
 	p.initialVelocity = Point( 0.0, 0.0 );
 	p.initialPressure = 0;
+	p.volForce = Point( 0.0, -1.0 );
 
 	return p;
 }

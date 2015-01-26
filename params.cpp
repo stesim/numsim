@@ -51,10 +51,15 @@ void Params::parseFile( const char *filename )
 		else SET_PARAM_DOUBLE(eps, "eps")
 		else SET_PARAM_DOUBLE(omega, "omg")
 		else SET_PARAM_DOUBLE(alpha, "alpha")
+		else SET_PARAM_DOUBLE(gamma, "gamma")
 		else SET_PARAM_DOUBLE(Re, "re")
+		else SET_PARAM_DOUBLE(Pr, "pr")
+		else SET_PARAM_DOUBLE(beta, "beta")
 		else SET_PARAM_DOUBLE(initialVelocity.x, "ui")
 		else SET_PARAM_DOUBLE(initialVelocity.y, "vi")
 		else SET_PARAM_DOUBLE(initialPressure, "pi")
+		else SET_PARAM_DOUBLE(volForce.x, "gx")
+		else SET_PARAM_DOUBLE(volForce.y, "gy")
 
 #undef SET_PARAM_DOUBLE
 #undef SET_PARAM_INT
@@ -99,10 +104,15 @@ int Params::parseCmdArgs( int argc, char* argv[] )
 		else SET_PARAM_DOUBLE(eps, "eps")
 		else SET_PARAM_DOUBLE(omega, "omg")
 		else SET_PARAM_DOUBLE(alpha, "alpha")
+		else SET_PARAM_DOUBLE(gamma, "gamma")
 		else SET_PARAM_DOUBLE(Re, "re")
+		else SET_PARAM_DOUBLE(Pr, "pr")
+		else SET_PARAM_DOUBLE(beta, "beta")
 		else SET_PARAM_DOUBLE(initialVelocity.x, "ui")
 		else SET_PARAM_DOUBLE(initialVelocity.y, "vi")
 		else SET_PARAM_DOUBLE(initialPressure, "pi")
+		else SET_PARAM_DOUBLE(volForce.x, "gx")
+		else SET_PARAM_DOUBLE(volForce.y, "gy")
 		else if( strcmp( name, "-" ) == 0 )
 		{
 			return i + 1;
@@ -144,6 +154,8 @@ std::ostream& operator <<( std::ostream& s, const Params& p )
 		<< "  Grid size:             "            << p.gridSize.x         << " x " << p.gridSize.y   << std::endl
 		<< "  T:                     "            << p.T                  <<                          std::endl
 		<< "  Re:                    "            << p.Re                 <<                          std::endl
+		<< "  Pr:                    "            << p.Pr                 <<                          std::endl
+		<< "  Beta:                  "            << p.beta               <<                          std::endl
 		<< "  dt:                    "            << p.dt                 <<                          std::endl
 		<< "  tau:                   "            << p.tau                <<                          std::endl
 		<< "  Output time step:      "            << p.deltaVec           <<                          std::endl
@@ -151,8 +163,10 @@ std::ostream& operator <<( std::ostream& s, const Params& p )
 		<< "  SOR error tolerance:   "            << p.eps                <<                          std::endl
 		<< "  Relaxation factor:     "            << p.omega              <<                          std::endl
 		<< "  Upwinding factor:      "            << p.alpha              <<                          std::endl
+		<< "  Upwinding factor (T):  "            << p.gamma              <<                          std::endl
 		<< "  Initial velocity:      ("           << p.initialVelocity.x  << "," << p.initialVelocity.y << ")" << std::endl
-		<< "  Initial pressure:      "            << p.initialPressure    << std::endl;
+		<< "  Initial pressure:      "            << p.initialPressure    << std::endl
+		<< "  Volumetric force:      ("           << p.volForce.x  << "," << p.volForce.y << ")" << std::endl;
 
 	return s;
 }

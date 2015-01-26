@@ -49,7 +49,7 @@ public:
    * \param step The number of the timestep.
    */
   static void writeRawOutput( const GridFunction& u, const GridFunction& v,
-		  const GridFunction& p, const GridFunction& psi,
+		  const GridFunction& p, const GridFunction& T, const GridFunction& psi,
 		  const GridFunction& zeta, const Point& delta, const Point& offset,
 		  index_t instance, index_t step, const MultiIndex& rank );
 

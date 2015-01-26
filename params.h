@@ -17,9 +17,13 @@ public:
 	real       eps;
 	real       omega;
 	real       alpha;
+	real       gamma;
 	real       Re;
+	real       Pr;
+	real       beta;
 	Point      initialVelocity;
 	real       initialPressure;
+	Point      volForce;
 
 	/*!
 	* Method reads the simulation parameters from the specified input file.

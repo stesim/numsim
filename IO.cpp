@@ -208,14 +208,14 @@ IO::writeVTKFile (const MultiIndex & griddimension, const GridFunction & u,
 }
 
 void IO::writeRawOutput( const GridFunction& u, const GridFunction& v,
-		const GridFunction& p, const GridFunction& psi,
+		const GridFunction& p, const GridFunction& T, const GridFunction& psi,
 		const GridFunction& zeta, const Point& delta, const Point& offset,
 		index_t instance, index_t step, const MultiIndex& rank )
 {
 	char filename[ 256 ];
 	MultiIndex griddimension;
 
-	sprintf( filename, "field-uvp-instance-%03d-step-%06d-rank-%03d-%03d.txt",
+	sprintf( filename, "field-uvpT-instance-%03d-step-%06d-rank-%03d-%03d.txt",
 			instance, step, rank.x, rank.y );
 	std::ofstream os( filename );
 
@@ -231,7 +231,7 @@ void IO::writeRawOutput( const GridFunction& u, const GridFunction& v,
 			real interpU = ( u( i + 1, j + 1 ) + u( i + 2, j + 1 ) ) / 2.0;
 			real interpV = ( v( i + 1, j + 1 ) + v( i + 1, j + 2 ) ) / 2.0;
 			os << std::scientific << x << ' ' << y << ' ' << interpU << ' '
-				<< interpV << ' ' << p( i + 1, j + 1 ) << ' ' << std::endl;
+				<< interpV << ' ' << p( i + 1, j + 1 ) << ' ' << T( i + 1, j + 1 ) << std::endl;
 		}
 	}
 	os.close();
