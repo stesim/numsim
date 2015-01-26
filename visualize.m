@@ -45,6 +45,7 @@ function visualize(ranks,step,instance)
     
 	figure(5);
 	surf(uvp{1},uvp{2},uvp{6},'EdgeColor','None');
+    view(2);
 	title('temperature');
 	xlabel('x');
 	ylabel('y');

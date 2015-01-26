@@ -1116,6 +1116,7 @@ void Geometry::bake()
 		m_MaskP( m_SettersP[ i ].index.x, m_SettersP[ i ].index.y ) = false;
 	}
 
+	/*
 	for( index_t j = 0; j < m_Raster.size().y; ++j )
 	{
 		for( index_t i = 0; i < m_Raster.size().x; ++i )
@@ -1125,6 +1126,7 @@ void Geometry::bake()
 		}
 		printf( "\n" );
 	}
+	*/
 }
 
 void Geometry::applyVelocityBoundary( GridFunction& u, GridFunction& v ) const

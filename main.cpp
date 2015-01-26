@@ -72,26 +72,36 @@ void simulate( Params params, int instance )
 
 	// construct geometry
 	Geometry geom( localDomainSize, localGridSize );
-	//geom.addRectangle( Point( 0.0, 0.0 ), Point( 1.0, 0.1 ), Geometry::BoundaryType::Noslip );
-	geom.setBottomBoundaryCondition( Geometry::BoundaryType::Noslip, Point::ZERO, Geometry::TBoundaryType::Neumann, 0.0 );
-	//geom.addRectangle( Point( 0.0, 0.1 ), Point( 0.1, 0.9 ), Geometry::BoundaryType::Noslip );
-	geom.setLeftBoundaryCondition( Geometry::BoundaryType::Noslip, Point::ZERO, Geometry::TBoundaryType::Neumann, 0.0 );
-	//geom.addRectangle( Point( 0.9, 0.1 ), Point( 1.0, 0.9 ), Geometry::BoundaryType::Noslip );
-	geom.setRightBoundaryCondition( Geometry::BoundaryType::Noslip, Point::ZERO, Geometry::TBoundaryType::Neumann, 0.0 );
-	//geom.addRectangle( Point( 0.0, 0.9 ), Point( 1.0, 1.0 ), Geometry::BoundaryType::Inflow, Point( 1.0, 0.0 ) );
-	geom.setTopBoundaryCondition( Geometry::BoundaryType::Inflow, Point( 0.0, 0.0 ), Geometry::TBoundaryType::Neumann, 0.0 );
+	geom.setBottomBoundaryCondition(
+			Geometry::BoundaryType::Noslip, Point::ZERO,
+			Geometry::TBoundaryType::Dirichlet, 0.8 );
+	geom.setLeftBoundaryCondition(
+			Geometry::BoundaryType::Noslip, Point::ZERO,
+			Geometry::TBoundaryType::Neumann, 0.0 );
+	geom.setRightBoundaryCondition(
+			Geometry::BoundaryType::Noslip, Point::ZERO,
+			Geometry::TBoundaryType::Neumann, 0.0 );
+	geom.setTopBoundaryCondition(
+			Geometry::BoundaryType::Inflow, Point( 0.05, 0.0 ),
+			Geometry::TBoundaryType::Neumann, 0.0 );
 
-	//geom.addRectangle( Point( 0.25, 0.25 ), Point( 0.5, 0.5 ), Geometry::BoundaryType::Noslip );
 	Geometry::Polygon poly;
 	poly.setStartPoint( Point( 0.25, 0.25 ) );
-	poly.addLine( Point( 0.35, 0.25 ), Geometry::BoundaryType::Noslip, Point( 0.0, 0.0 ), Geometry::TBoundaryType::Dirichlet, 0.5 );
-	poly.addLine( Point( 0.55, 0.75 ), Geometry::BoundaryType::Noslip, Point( 0.0, 0.0 ), Geometry::TBoundaryType::Dirichlet, 0.5 );
-	poly.addLine( Point( 0.45, 0.75 ), Geometry::BoundaryType::Noslip, Point( 0.0, 0.0 ), Geometry::TBoundaryType::Dirichlet, 0.5 );
-	poly.addLine( Point( 0.25, 0.25 ), Geometry::BoundaryType::Noslip, Point( 0.0, 0.0 ), Geometry::TBoundaryType::Dirichlet, 0.5 );
+	poly.addLine( Point( 0.35, 0.25 ),
+			Geometry::BoundaryType::Noslip, Point( 0.0, 0.0 ),
+			Geometry::TBoundaryType::Dirichlet, 0.0 );
+	poly.addLine( Point( 0.55, 0.75 ),
+			Geometry::BoundaryType::Noslip, Point( 0.0, 0.0 ),
+			Geometry::TBoundaryType::Dirichlet, 0.0 );
+	poly.addLine( Point( 0.45, 0.75 ),
+			Geometry::BoundaryType::Noslip, Point( 0.0, 0.0 ),
+			Geometry::TBoundaryType::Dirichlet, 0.0 );
+	poly.addLine( Point( 0.25, 0.25 ),
+			Geometry::BoundaryType::Noslip, Point( 0.0, 0.0 ),
+			Geometry::TBoundaryType::Dirichlet, 0.0 );
 	geom.addPolygon( poly );
 
 	geom.bake();
-	//return;
 
 	const MaskFunction& uMask = geom.getComputationMaskU();
 	const MaskFunction& vMask = geom.getComputationMaskV();
@@ -298,7 +308,7 @@ Params defaultParams()
 	p.beta = 0.1;
 	p.initialVelocity = Point( 0.0, 0.0 );
 	p.initialPressure = 0;
-	p.volForce = Point( 0.0, -1.0 );
+	p.volForce = Point( 0.0, -0.01 );
 
 	return p;
 }
