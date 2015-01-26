@@ -6,6 +6,7 @@ function visualize(ranks,step,instance)
 	uvp = stitch_subdomains('uvpT',6);
 
     for i=1:6
+        figure(i);
         clf(i);
     end
     

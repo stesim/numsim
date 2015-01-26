@@ -33,6 +33,7 @@ private:
 
 	enum class Orientation
 	{
+		None = 0,
 		North = 1,
 		NorthEast = 3,
 		East = 2,

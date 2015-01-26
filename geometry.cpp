@@ -15,6 +15,7 @@ Geometry::Geometry( const Point& domainSize, const MultiIndex& gridSize )
 	RasterCell cell;
 	cell.type = CellType::Fluid;
 	cell.shapeId = 0;
+	cell.orientation = Orientation::None;
 
 	m_Raster = constant( cell );
 
@@ -87,7 +88,10 @@ void Geometry::addPolygon( const Polygon& polygon )
 
 		for( index_t i = imin + 1; i < imax; ++i )
 		{
-			m_Raster( i, j ).type = CellType::Obstacle;
+			if( m_Raster( i, j ).type != CellType::Boundary )
+			{
+				m_Raster( i, j ).type = CellType::Obstacle;
+			}
 		}
 	}
 }
@@ -558,9 +562,9 @@ void Geometry::bake()
 			if( m_Raster( i, j ).type == CellType::Boundary )
 			{
 				m_Raster( i, j ).orientation = static_cast<Orientation>(
-						( j > 0 && m_Raster( i, j - 1 ).type == CellType::Fluid )
+						( j < m_Raster.size().y - 1 && m_Raster( i, j + 1 ).type == CellType::Fluid )
 						| ( i < m_Raster.size().x - 1 && m_Raster( i + 1, j ).type == CellType::Fluid ) << 1
-						| ( j < m_Raster.size().y - 1 && m_Raster( i, j + 1 ).type == CellType::Fluid ) << 2
+						| ( j > 0 && m_Raster( i, j - 1 ).type == CellType::Fluid ) << 2
 						| ( i > 0 && m_Raster( i - 1, j ).type == CellType::Fluid ) << 3 );
 				++numBoundaryCells;
 			}
@@ -1112,16 +1116,15 @@ void Geometry::bake()
 		m_MaskP( m_SettersP[ i ].index.x, m_SettersP[ i ].index.y ) = false;
 	}
 
-	/*
 	for( index_t j = 0; j < m_Raster.size().y; ++j )
 	{
 		for( index_t i = 0; i < m_Raster.size().x; ++i )
 		{
-			printf( "%d ", m_Raster( i, j ).type == CellType::Obstacle );
+			printf( "%d ", static_cast<int>( m_Raster( i, j ).orientation ) );
+			//printf( "%d ", m_Raster( i, j ).type == CellType::Boundary );
 		}
 		printf( "\n" );
 	}
-	*/
 }
 
 void Geometry::applyVelocityBoundary( GridFunction& u, GridFunction& v ) const
