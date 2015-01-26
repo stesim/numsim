@@ -30,6 +30,8 @@ public:
 			const GridFunction& f,
 			const GridFunction& g,
 			const GridFunction& p,
+			const MaskFunction& uMask,
+			const MaskFunction& vMask,
 			const Point& h,
 			real dt );
 
@@ -45,6 +47,8 @@ public:
 			GridFunction& g,
 			const GridFunction& u,
 			const GridFunction& v,
+			const MaskFunction& uMask,
+			const MaskFunction& vMask,
 			const Point& h,
 			real dt,
 			real Re,
@@ -58,6 +62,7 @@ public:
 	static void computeRightHandSide( GridFunction& rhs,
 			const GridFunction& f,
 			const GridFunction& g,
+			const MaskFunction& pMask,
 			const Point& h,
 			real dt );
 

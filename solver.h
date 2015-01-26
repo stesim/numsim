@@ -11,6 +11,7 @@ public:
 	//! \param rhs Right hand side
 	static real computeResidual( const GridFunction& p,
 			const GridFunction& rhs,
+			const MaskFunction& pMask,
 			const MultiIndex& gridSize,
 			const Point& h );
 
@@ -20,6 +21,7 @@ public:
 	//! \param omega Relaxation factor
 	static void SORCycle( GridFunction& p,
 			const GridFunction& rhs,
+			const MaskFunction& pMask,
 			const Point& h,
 			real omega );
 
@@ -30,6 +32,7 @@ public:
 	//! \param subcycle Subcycle index (red/black)
 	static void SORSubcycle( GridFunction& p,
 			const GridFunction& rhs,
+			const MaskFunction& pMask,
 			const Point& h,
 			real omega,
 			bool color );

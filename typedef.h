@@ -17,4 +17,6 @@ typedef mm::Tuple<real, 2> Point;
 
 typedef mm::Function<real, 2> GridFunction;
 
+typedef mm::Function<bool, 2> MaskFunction;
+
 #endif

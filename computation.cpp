@@ -34,15 +34,17 @@ void Computation::computeNewVelocities( GridFunction& u,
 		const GridFunction& f,
 		const GridFunction& g,
 		const GridFunction& p,
+		const MaskFunction& uMask,
+		const MaskFunction& vMask,
 		const Point& h,
 		real dt )
 {
 	// ------------------------- compute u -------------------------
-	set( u, MultiIndex::ONE, u.size() - MultiIndex::ONE,
+	utils::setMasked( u, MultiIndex::ONE, u.size() - MultiIndex::ONE, uMask,
 			f - dt * utils::diffX_Bw( p, h.x ) );
 
 	// ------------------------- compute v -------------------------
-	set( v, MultiIndex::ONE, v.size() - MultiIndex::ONE,
+	utils::setMasked( v, MultiIndex::ONE, v.size() - MultiIndex::ONE, vMask,
 			g - dt * utils::diffY_Bw( p, h.y ) );
 }
 
@@ -50,6 +52,8 @@ void Computation::computeMomentumEquations( GridFunction& f,
 		GridFunction& g,
 		const GridFunction& u,
 		const GridFunction& v,
+		const MaskFunction& uMask,
+		const MaskFunction& vMask,
 		const Point& h,
 		real dt,
 		real Re,
@@ -65,7 +69,7 @@ void Computation::computeMomentumEquations( GridFunction& f,
 		 + alpha * utils::diffY_Bw( ( 0.5 * abs( eval<-1,+1>( v ) + eval<0,+1>( v ) ) ) * ( 0.5 * ( u - eval<0,+1>( u ) ) ), h.y );
 
 	// ---------------------- compute final f ----------------------
-	set( f, MultiIndex::ONE, f.size() - MultiIndex::ONE,
+	utils::setMasked( f, MultiIndex::ONE, f.size() - MultiIndex::ONE, uMask,
 			u + dt * ( 1.0 / Re * utils::diffXX_YY( u, h )
 				- u2x - uvy ) );
 
@@ -79,7 +83,7 @@ void Computation::computeMomentumEquations( GridFunction& f,
 		 + alpha * utils::diffX_Bw( ( 0.5 * abs( eval<+1,-1>( u ) + eval<+1,0>( u ) ) ) * ( 0.5 * ( v - eval<+1,0>( v ) ) ), h.x );
 
 	// ---------------------- compute final g ----------------------
-	set( g, MultiIndex::ONE, g.size() - MultiIndex::ONE,
+	utils::setMasked( g, MultiIndex::ONE, g.size() - MultiIndex::ONE, vMask,
 			v + dt * ( 1.0 / Re * utils::diffXX_YY( v, h )
 				- v2y - uvx ) );
 }
@@ -87,6 +91,7 @@ void Computation::computeMomentumEquations( GridFunction& f,
 void Computation::computeRightHandSide( GridFunction& rhs,
 		const GridFunction& f,
 		const GridFunction& g,
+		const MaskFunction& pMask,
 		const Point& h,
 		real dt )
 {
@@ -94,8 +99,9 @@ void Computation::computeRightHandSide( GridFunction& rhs,
 	// eine *zentrale* Differenz, da wir entsprechend staggered sind beim Druck
 
 	// rhs = 1/dt * (df/dx + dg/dy)
-	rhs = 1.0 / dt * ( utils::diffX_Fw( eval<+1,+1>( f ), h.x )
-			+ utils::diffY_Fw( eval<+1,+1>( g ), h.y ) );
+	utils::setMasked( rhs, eval<+1,+1>( pMask ),
+			1.0 / dt * ( utils::diffX_Fw( eval<+1,+1>( f ), h.x )
+				+ utils::diffY_Fw( eval<+1,+1>( g ), h.y ) ) );
 }
 
 void Computation::computeVelocityPotential( GridFunction& psi,
@@ -127,7 +133,7 @@ void Computation::setVelocityBoundary( GridFunction& u, GridFunction& v,
 	// left
 	if( left )
 	{
-		set( u, MultiIndex( 1, 0 ), MultiIndex( 2, u.size().y - 1 ),
+		set( u, MultiIndex( 1, 1 ), MultiIndex( 2, u.size().y - 1 ),
 				constant( 0.0 ) );
 		set( v, MultiIndex::ZERO, MultiIndex( 1, v.size().y ),
 				-eval<+1,0>( v ) );

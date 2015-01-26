@@ -1,10 +1,14 @@
-function visualize(ranks,step)
+function visualize(ranks,step,instance)
 	step_str = num2str(step,'%06d');
 	rx = ranks(2);
 	ry = ranks(1);
 
 	uvp = stitch_subdomains('uvp',5);
 
+    for i=1:6
+        clf(i);
+    end
+    
 	figure(1);
 	surf(uvp{1},uvp{2},uvp{3},'EdgeColor','None');
 	title('velocity_x');
@@ -58,7 +62,7 @@ function visualize(ranks,step)
 
 		for i=1:rx
 			for j=1:ry
-				filename = ['field-' field_names '-step-' step_str '-rank-' num2str(i-1,'%03d') '-' num2str(j-1,'%03d') '.txt'];
+				filename = ['field-' field_names '-instance-' num2str(instance,'%03d') '-step-' step_str '-rank-' num2str(i-1,'%03d') '-' num2str(j-1,'%03d') '.txt'];
 				file = fopen(filename);
 
 				gridSize = fscanf(file, '%d %d');
