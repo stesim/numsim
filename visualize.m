@@ -1,39 +1,51 @@
-function visualize(ranks,step,instance)
+function visualize(ranks,step,instance,varargin)
+	funnames = {'u','v','p','uv','T','zeta'};
+
+	if length(varargin) == 0
+		varargin = funnames;
+	end
+
+	isset = @(funname)(any(strcmp(funname,varargin)));
+
 	step_str = num2str(step,'%06d');
 	rx = ranks(2);
 	ry = ranks(1);
 
 	uvp = stitch_subdomains('uvpT',6);
-
-    for i=1:6
-        figure(i);
-        clf(i);
-    end
     
-	figure(1);
-	surf(uvp{1},uvp{2},uvp{3},'EdgeColor','None');
-	title('velocity_x');
-	xlabel('x');
-	ylabel('y');
+	if isset('u')
+		figure(1);
+		surf(uvp{1},uvp{2},uvp{3},'EdgeColor','None');
+		title('velocity_x');
+		xlabel('x');
+		ylabel('y');
+	end
 
-	figure(2);
-	surf(uvp{1},uvp{2},uvp{4},'EdgeColor','None');
-	title('velocity_y');
-	xlabel('x');
-	ylabel('y');
+	if isset('v')
+		figure(2);
+		surf(uvp{1},uvp{2},uvp{4},'EdgeColor','None');
+		title('velocity_y');
+		xlabel('x');
+		ylabel('y');
+	end
 
-	figure(3);
-	surf(uvp{1},uvp{2},uvp{5},'EdgeColor','None');
-	title('pressure');
-	xlabel('x');
-	ylabel('y');
+	if isset('p')
+		figure(3);
+		surf(uvp{1},uvp{2},uvp{5},'EdgeColor','None');
+		title('pressure');
+		xlabel('x');
+		ylabel('y');
+	end
 	
-	figure(4);
-	startx = rand([1,floor(gridSize(2)*1.7)]);
-	streamslice(uvp{1},uvp{2},uvp{3},uvp{4},1.42);
-	title('streamlines');
-	xlabel('x');
-	ylabel('y');
+	if isset('uv')
+		figure(4);
+		clf(4);
+		startx = rand([1,floor(gridSize(2)*1.7)]);
+		streamslice(uvp{1},uvp{2},uvp{3},uvp{4},1.42);
+		title('streamlines');
+		xlabel('x');
+		ylabel('y');
+	end
 
 	%psi = stitch_subdomains('psi',3);
 
@@ -43,20 +55,24 @@ function visualize(ranks,step,instance)
 	%xlabel('x');
 	%ylabel('y');
     
-	figure(5);
-	surf(uvp{1},uvp{2},uvp{6},'EdgeColor','None');
-    view(2);
-	title('temperature');
-	xlabel('x');
-	ylabel('y');
+	if isset('T')
+		figure(5);
+		surf(uvp{1},uvp{2},uvp{6},'EdgeColor','None');
+		view(2);
+		title('temperature');
+		xlabel('x');
+		ylabel('y');
+	end
 
-	zeta = stitch_subdomains('zeta',3);
+	if isset('zeta')
+		zeta = stitch_subdomains('zeta',3);
 
-	figure(6);
-	surf(zeta{1},zeta{2},zeta{3},'EdgeColor','None');
-	title('vorticity');
-	xlabel('x');
-	ylabel('y');
+		figure(6);
+		surf(zeta{1},zeta{2},zeta{3},'EdgeColor','None');
+		title('vorticity');
+		xlabel('x');
+		ylabel('y');
+	end
 
 	function fields = stitch_subdomains(field_names,num_fields)
 		size_global = [0,0];
@@ -95,6 +111,8 @@ function visualize(ranks,step,instance)
 				for n=1:num_fields
 					fields{n}(sel_y,sel_x) = reshape(entries(n,:),[gridSize(2),gridSize(1)]).';
 				end
+
+				fclose(file);
 			end
 		end
 	end

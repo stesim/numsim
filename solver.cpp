@@ -50,9 +50,6 @@ real Solver::computeResidual( const GridFunction& p,
 		const MultiIndex& gridSize,
 		const Point& h )
 {
-	assert( p.size() - MultiIndex( 2, 2 ) == m_miSize &&
-			rhs.size() == m_miSize );
-
 	real sum_local =
 		sumMasked( sqr( utils::diffXX_YY( eval<+1,+1>( p ), h ) - rhs ),
 				MultiIndex::ZERO, rhs.size(), eval<+1,+1>( pMask ) );
@@ -67,9 +64,6 @@ void Solver::SORCycle( GridFunction& p,
 		const Point& h,
 		real omega )
 {
-	assert( p.size() - MultiIndex( 2, 2 ) == m_miSize &&
-			rhs.size() == m_miSize );
-
 	real dx2 = h.x * h.x;
 	real dy2 = h.y * h.y;
 
@@ -88,9 +82,6 @@ void Solver::SORSubcycle( GridFunction& p,
 		real omega,
 		bool color )
 {
-	assert( p.size() - MultiIndex( 2, 2 ) == m_miSize &&
-			rhs.size() == m_miSize );
-
 	real dx2 = h.x * h.x;
 	real dy2 = h.y * h.y;
 

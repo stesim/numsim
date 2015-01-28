@@ -45,8 +45,6 @@ void simulate( Params params, int instance )
 		std::cout << params;
 	);
 
-	//params.gridSize = MultiIndex( 6, 4 ); // TODO: remove
-
 	MultiIndex localGridSize = params.gridSize;
 	localGridSize.x /= commSize.x;
 	localGridSize.y /= commSize.y;
@@ -74,7 +72,7 @@ void simulate( Params params, int instance )
 	Geometry geom( localDomainSize, localGridSize );
 	geom.setBottomBoundaryCondition(
 			Geometry::BoundaryType::Noslip, Point::ZERO,
-			Geometry::TBoundaryType::Dirichlet, 0.8 );
+			Geometry::TBoundaryType::Dirichlet, 0.0 );
 	geom.setLeftBoundaryCondition(
 			Geometry::BoundaryType::Noslip, Point::ZERO,
 			Geometry::TBoundaryType::Neumann, 0.0 );
@@ -113,8 +111,8 @@ void simulate( Params params, int instance )
 	GridFunction g( localGridSize + MultiIndex( 2, 3 ) );
 	GridFunction p( localGridSize + MultiIndex( 2, 2 ) );
 	GridFunction rhs( localGridSize );
-	GridFunction T( localGridSize + MultiIndex( 1, 1 ) );
-	GridFunction TT( localGridSize + MultiIndex( 1, 1 ) );
+	GridFunction T( localGridSize + MultiIndex( 2, 2 ) );
+	GridFunction TT( localGridSize + MultiIndex( 2, 2 ) );
 
 	GridFunction psi( localGridSize + MultiIndex::ONE );
 	GridFunction zeta( localGridSize - MultiIndex::ONE );
@@ -134,13 +132,10 @@ void simulate( Params params, int instance )
 	g = constant( params.initialVelocity.y );
 
 	T = constant( 0.0 );
+	TT = constant( 0.0 );
 
 	auto startTime = getTime();
 
-	/*
-	Computation::setVelocityBoundary( u, v,
-			leftBoundary, topBoundary, rightBoundary, bottomBoundary );
-	*/
 	geom.applyVelocityBoundary( u, v );
 	geom.applyTemperatureBoundary( T );
 
@@ -177,10 +172,6 @@ void simulate( Params params, int instance )
 					uMask, vMask, h, dt, params.Re, params.alpha, params.beta );
 		}
 		
-		/*
-		Computation::setVelocityBoundary( f, g,
-				leftBoundary, topBoundary, rightBoundary, bottomBoundary );
-		*/
 		geom.applyVelocityBoundary( f, g );
 		Communication::exchangeFunctionBoundary( f, MultiIndex( 2, 1 ) );
 		Communication::exchangeFunctionBoundary( g, MultiIndex( 1, 2 ) );
@@ -194,10 +185,6 @@ void simulate( Params params, int instance )
 		index_t iterResidualNext = iterResidual / resIterFrac;
 		while( iter < params.maxIter )
 		{
-			/*
-			Computation::setPressureBoundary( p,
-					leftBoundary, topBoundary, rightBoundary, bottomBoundary );
-			*/
 			geom.applyPressureBoundary( p );
 
 			Solver::SORSubcycle( p, rhs, pMask, h, params.omega, true );
@@ -231,10 +218,6 @@ void simulate( Params params, int instance )
 		Communication::exchangeFunctionBoundary( u, MultiIndex( 2, 1 ) );
 		Communication::exchangeFunctionBoundary( v, MultiIndex( 1, 2 ) );
 
-		/*
-		Computation::setVelocityBoundary( u, v,
-				leftBoundary, topBoundary, rightBoundary, bottomBoundary );
-		*/
 		geom.applyVelocityBoundary( u, v );
 
 		real timeEndStep = getElapsedTime( startTime );

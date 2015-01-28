@@ -27,7 +27,7 @@ endif
 # siehe auch http://www.phoronix.com/scan.php?page=article&item=gcc_48_og&num=1
 # Ofast ist ähnlich zu -fno-signed-zeros -freciprocal-math -fno-trapping-math -fassociative-math 
 # -fopenmp: enable #pragma omp parallel for
-#CXXFLAGS := -Wall -D_DEBUG -g -std=c++11 -D_CPP11 #-pedantic
+#CXXFLAGS := -Wall -D_DEBUG -g -std=c++11 #-pedantic
 CXXFLAGS := -Wall -march=native -O3 -flto -fuse-linker-plugin -DNDEBUG -std=c++11 -fno-signed-zeros -freciprocal-math -fno-trapping-math -fassociative-math #-flto -fuse-linker-plugin -fopenmp
 #CXXFLAGS := -Wall -march=native -O3 -DNDEBUG -std=c++11 -fno-signed-zeros -freciprocal-math -fno-trapping-math -fassociative-math #-flto -fuse-linker-plugin -fopenmp
 LIBS := -pthread

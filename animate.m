@@ -8,7 +8,13 @@ function animate(ranks,instance)
     %name = name(index);
     
     for i=1:length(num)
-        visualize(ranks, num(i), instance);
-        pause(0.1);
+        visualize(ranks, num(i), instance, 'T');
+		drawnow;
+		M(i) = getframe;
     end
+
+	display('Press any key to play the animation...');
+	pause;
+
+	movie(M,1);
 end

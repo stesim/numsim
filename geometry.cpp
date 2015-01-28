@@ -1,6 +1,8 @@
 #include "geometry.h"
 #include <metamath/metamath.h>
 
+#include <cstdio>
+
 using namespace mm;
 
 Geometry::Geometry( const Point& domainSize, const MultiIndex& gridSize )
@@ -542,16 +544,6 @@ void Geometry::setTopBoundaryCondition( BoundaryType condition,
 
 void Geometry::bake()
 {
-	/*
-	m_SettersU.clear();
-	m_SettersV.clear();
-	m_SettersP.clear();
-
-	set( m_MaskU, MultiIndex( 2, 1 ), m_MaskU.size() - MultiIndex( 2, 1 ), constant( true ) );
-	set( m_MaskV, MultiIndex( 1, 2 ), m_MaskV.size() - MultiIndex( 1, 2 ), constant( true ) );
-	set( m_MaskP, MultiIndex::ONE, m_MaskP.size() - MultiIndex::ONE, constant( true ) );
-	*/
-
 	std::size_t numBoundaryCells = 0;
 
 	// determine boundary cell orientation
@@ -731,6 +723,10 @@ void Geometry::bake()
 							m_SettersP.push_back( setter );
 							break;
 						}
+						default:
+						{
+							break;
+						}
 					}
 					break;
 				}
@@ -861,6 +857,10 @@ void Geometry::bake()
 							setter.factor = 0.5;
 
 							m_SettersP.push_back( setter );
+							break;
+						}
+						default:
+						{
 							break;
 						}
 					}
@@ -995,6 +995,10 @@ void Geometry::bake()
 							m_SettersP.push_back( setter );
 							break;
 						}
+						default:
+						{
+							break;
+						}
 					}
 					break;
 				}
@@ -1039,6 +1043,10 @@ void Geometry::bake()
 							setter.factor = 0.0;
 
 							m_SettersT.push_back( setter );
+							break;
+						}
+						default:
+						{
 							break;
 						}
 					}
@@ -1091,6 +1099,10 @@ void Geometry::bake()
 							m_SettersT.push_back( setter );
 							break;
 						}
+						default:
+						{
+							break;
+						}
 					}
 					break;
 				}
@@ -1116,17 +1128,16 @@ void Geometry::bake()
 		m_MaskP( m_SettersP[ i ].index.x, m_SettersP[ i ].index.y ) = false;
 	}
 
-	/*
-	for( index_t j = 0; j < m_Raster.size().y; ++j )
+	for( index_t j = 0; j < m_MaskV.size().y; ++j )
 	{
-		for( index_t i = 0; i < m_Raster.size().x; ++i )
+		for( index_t i = 0; i < m_MaskV.size().x; ++i )
 		{
-			printf( "%d ", static_cast<int>( m_Raster( i, j ).orientation ) );
+			//printf( "%d ", static_cast<int>( m_Raster( i, j ).orientation ) );
 			//printf( "%d ", m_Raster( i, j ).type == CellType::Boundary );
+			printf( "%d ", !m_MaskV( i, j ) );
 		}
 		printf( "\n" );
 	}
-	*/
 }
 
 void Geometry::applyVelocityBoundary( GridFunction& u, GridFunction& v ) const
